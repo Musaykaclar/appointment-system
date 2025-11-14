@@ -1,0 +1,150 @@
+﻿@page "/appointments"
+@using AppointmentSystem.Application.DTOs
+@using AppointmentSystem.Application.Services
+@using AppointmentSystem.Domain.Entities
+@using MudBlazor
+@using MudBlazor.Services
+@using Microsoft.AspNetCore.Components.Forms
+@inject IAppointmentService AppointmentService
+@inject IBranchService BranchService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Randevu Listesi</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-2">
+
+    <MudPaper Class="p-4 rounded shadow-sm">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <MudText Typo="Typo.h5">Randevularım</MudText>
+        </div>
+
+        <!-- FILTERS -->
+        <MudGrid Spacing="3" Class="mb-3">
+            <MudItem xs="12" md="3">
+                <MudDatePicker @bind-Date="Filter.StartDate" Label="Başlangıç Tarihi" Variant="Variant.Outlined" Clearable="true"/>
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudDatePicker @bind-Date="Filter.EndDate" Label="Bitiş Tarihi" Variant="Variant.Outlined" Clearable="true"/>
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="Filter.SearchText" Label="Ara..." Variant="Variant.Outlined"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true"/>
+            </MudItem>
+            <MudItem xs="12" md="3" class="d-flex align-items-end">
+                <MudButton Color="Color.Primary" OnClick="ApplyFilters" Class="me-2">Filtrele</MudButton>
+                <MudButton Color="Color.Default" OnClick="ClearFilters">Temizle</MudButton>
+            </MudItem>
+        </MudGrid>
+
+        <!-- TABLE -->
+        <MudTable Items="@PagedResult.Items" Hover="true" Bordered="true" Striped="true" Dense="true" Loading="@IsLoading">
+            <HeaderContent>
+                <MudTh>Talep No</MudTh>
+                <MudTh>Başlık</MudTh>
+                <MudTh>Tarih</MudTh>
+                <MudTh>Saat</MudTh>
+                <MudTh>Durum</MudTh>
+                <MudTh>İşlemler</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Id</MudTd>
+                <MudTd>@context.Title</MudTd>
+                <MudTd>@context.Date.ToShortDateString()</MudTd>
+                <MudTd>@context.StartTime.ToString(@"hh\:mm") - @context.EndTime.ToString(@"hh\:mm")</MudTd>
+                <MudTd>
+                    <MudChip T="string" Color="@GetStatusColor(context.Status)" Size="Size.Small">@context.Status.ToString()</MudChip>
+                </MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Primary" Size="Size.Small"
+                                   OnClick="() => ShowDetails(context)" title="Detayları Görüntüle" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    private AppointmentFilterDto Filter = new() { PageSize = 10 };
+    private PagedResult<AppointmentDto> PagedResult = new();
+    private bool IsLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAppointments();
+    }
+
+    private async Task LoadAppointments()
+    {
+        IsLoading = true;
+        try
+        {
+            PagedResult = await AppointmentService.GetAppointmentsAsync(Filter);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        Filter.PageNumber = 1;
+        await LoadAppointments();
+    }
+
+    private async Task ClearFilters()
+    {
+        Filter = new AppointmentFilterDto { PageSize = 10 };
+        await LoadAppointments();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        Filter.PageNumber = page;
+        await LoadAppointments();
+    }
+
+    private async Task OnPageSizeChanged(int pageSize)
+    {
+        Filter.PageSize = pageSize;
+        Filter.PageNumber = 1;
+        await LoadAppointments();
+    }
+
+    private Color GetStatusColor(AppointmentStatus status)
+    {
+        return status switch
+        {
+            AppointmentStatus.Draft => Color.Default,
+            AppointmentStatus.Pending => Color.Warning,
+            AppointmentStatus.Approved => Color.Success,
+            AppointmentStatus.Rejected => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private async Task ShowDetails(AppointmentDto appointment)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Appointment"] = appointment
+        };
+
+        var options = new DialogOptions() 
+        { 
+            MaxWidth = MaxWidth.Medium, 
+            FullWidth = true,
+            CloseButton = true
+        };
+
+        await DialogService.ShowAsync<AppointmentDetailDialog>("Randevu Detayları", parameters, options);
+    }
+}

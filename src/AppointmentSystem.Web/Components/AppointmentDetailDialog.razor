@@ -1,0 +1,130 @@
+@using MudBlazor
+@using AppointmentSystem.Application.DTOs
+@using AppointmentSystem.Application.Services
+@using Microsoft.AspNetCore.Components
+@inject IAppointmentService AppointmentService
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Randevu Detayları</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (Appointment != null)
+        {
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Talep No</MudText>
+                    <MudText>@Appointment.Id</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Başlık</MudText>
+                    <MudText>@Appointment.Title</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Talep Eden</MudText>
+                    <MudText>@Appointment.RequestedBy</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Şube</MudText>
+                    <MudText>@Appointment.BranchName</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Tarih</MudText>
+                    <MudText>@Appointment.Date.ToShortDateString()</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Saat</MudText>
+                    <MudText>@Appointment.StartTime.ToString(@"hh\:mm") - @Appointment.EndTime.ToString(@"hh\:mm")</MudText>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudText Typo="Typo.subtitle2" Color="Color.Primary">Durum</MudText>
+                    <MudChip T="string" Color="@GetStatusColor(Appointment.Status)" Size="Size.Small">
+                        @Appointment.Status.ToString()
+                    </MudChip>
+                </MudItem>
+                @if (!string.IsNullOrEmpty(Appointment.Description))
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Primary">Açıklama</MudText>
+                        <MudText>@Appointment.Description</MudText>
+                    </MudItem>
+                }
+                @if (!string.IsNullOrEmpty(Appointment.AdminComment))
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.subtitle2" Color="Color.Primary">Yönetici Yorumu</MudText>
+                        <MudText>@Appointment.AdminComment</MudText>
+                    </MudItem>
+                }
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudText Typo="Typo.h6" Class="mb-3">Durum Geçmişi</MudText>
+            @if (Audits != null && Audits.Any())
+            {
+                <MudTimeline>
+                    @foreach (var audit in Audits)
+                    {
+                        <MudTimelineItem Size="Size.Small">
+                            <MudText Typo="Typo.body2">
+                                <strong>@audit.FromStatus</strong> → <strong>@audit.ToStatus</strong>
+                            </MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @audit.ActionBy - @audit.ActionAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
+                            </MudText>
+                            @if (!string.IsNullOrEmpty(audit.Comment))
+                            {
+                                <MudText Typo="Typo.body2" Class="mt-1">@audit.Comment</MudText>
+                            }
+                        </MudTimelineItem>
+                    }
+                </MudTimeline>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Henüz durum değişikliği yok.</MudText>
+            }
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Kapat</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IDialogReference? MudDialog { get; set; }
+
+    [Parameter] public AppointmentDto? Appointment { get; set; }
+
+    private List<AppointmentAuditDto> Audits { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Appointment != null)
+        {
+            Audits = await AppointmentService.GetAppointmentAuditsAsync(Appointment.Id);
+        }
+    }
+
+    private Color GetStatusColor(AppointmentSystem.Domain.Entities.AppointmentStatus status)
+    {
+        return status switch
+        {
+            AppointmentSystem.Domain.Entities.AppointmentStatus.Draft => Color.Default,
+            AppointmentSystem.Domain.Entities.AppointmentStatus.Pending => Color.Warning,
+            AppointmentSystem.Domain.Entities.AppointmentStatus.Approved => Color.Success,
+            AppointmentSystem.Domain.Entities.AppointmentStatus.Rejected => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    void Cancel() 
+    {
+        if (MudDialog != null)
+        {
+            MudDialog.Close();
+        }
+    }
+}
+

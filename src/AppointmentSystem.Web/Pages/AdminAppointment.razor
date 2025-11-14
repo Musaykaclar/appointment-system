@@ -1,0 +1,204 @@
+@page "/admin-appointments"
+@using AppointmentSystem.Application.DTOs
+@using AppointmentSystem.Application.Services
+@using AppointmentSystem.Domain.Entities
+@using MudBlazor
+@using MudBlazor.Services
+@inject IAppointmentService AppointmentService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Yönetici Paneli</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-2">
+
+    <MudPaper Class="p-4 rounded shadow-sm">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <MudText Typo="Typo.h5">Yönetici Paneli</MudText>
+        </div>
+
+        <!-- FILTERS -->
+        <MudGrid Spacing="3" Class="mb-3">
+            <MudItem xs="12" md="3">
+                <MudDatePicker @bind-Date="Filter.StartDate" Label="Başlangıç Tarihi" Variant="Variant.Outlined" Clearable="true"/>
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudDatePicker @bind-Date="Filter.EndDate" Label="Bitiş Tarihi" Variant="Variant.Outlined" Clearable="true"/>
+            </MudItem>
+            <MudItem xs="12" md="3">
+                <MudTextField @bind-Value="Filter.SearchText" Label="Ara..." Variant="Variant.Outlined"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Immediate="true"/>
+            </MudItem>
+            <MudItem xs="12" md="3" class="d-flex align-items-end">
+                <MudButton Color="Color.Primary" OnClick="ApplyFilters" Class="me-2">Filtrele</MudButton>
+                <MudButton Color="Color.Default" OnClick="ClearFilters">Temizle</MudButton>
+            </MudItem>
+        </MudGrid>
+
+        <!-- TABLE -->
+        <MudTable Items="@PagedResult.Items" Hover="true" Bordered="true" Striped="true" Dense="true" Loading="@IsLoading">
+            <HeaderContent>
+                <MudTh>Talep No</MudTh>
+                <MudTh>Başlık</MudTh>
+                <MudTh>Talep Eden</MudTh>
+                <MudTh>Tarih</MudTh>
+                <MudTh>Saat</MudTh>
+                <MudTh>Şube</MudTh>
+                <MudTh>Açıklama</MudTh>
+                <MudTh>İşlemler</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.Id</MudTd>
+                <MudTd>@context.Title</MudTd>
+                <MudTd>@context.RequestedBy</MudTd>
+                <MudTd>@context.Date.ToShortDateString()</MudTd>
+                <MudTd>@context.StartTime.ToString(@"hh\:mm") - @context.EndTime.ToString(@"hh\:mm")</MudTd>
+                <MudTd>@context.BranchName</MudTd>
+                <MudTd>
+                    <MudText Typo="Typo.body2" Style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">
+                        @context.Description
+                    </MudText>
+                </MudTd>
+                <MudTd>
+                    <MudButton Color="Color.Success" Size="Size.Small" StartIcon="@Icons.Material.Filled.Check" OnClick="() => ApproveAppointment(context)" Class="me-2">Onayla</MudButton>
+                    <MudButton Color="Color.Error" Size="Size.Small" StartIcon="@Icons.Material.Filled.Close" OnClick="() => RejectAppointment(context)">Reddet</MudButton>
+                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Primary" Size="Size.Small" OnClick="() => ShowDetails(context)" Class="ms-2"/>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+    private AppointmentFilterDto Filter = new() { PageSize = 10 };
+    private PagedResult<AppointmentDto> PagedResult = new();
+    private bool IsLoading = false;
+    private const string AdminUser = "Admin"; // Gerçek uygulamada authentication'dan gelecek
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAppointments();
+    }
+
+    private async Task LoadAppointments()
+    {
+        IsLoading = true;
+        try
+        {
+            PagedResult = await AppointmentService.GetPendingAppointmentsAsync(Filter);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        Filter.PageNumber = 1;
+        await LoadAppointments();
+    }
+
+    private async Task ClearFilters()
+    {
+        Filter = new AppointmentFilterDto { PageSize = 10 };
+        await LoadAppointments();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        Filter.PageNumber = page;
+        await LoadAppointments();
+    }
+
+    private async Task OnPageSizeChanged(int pageSize)
+    {
+        Filter.PageSize = pageSize;
+        Filter.PageNumber = 1;
+        await LoadAppointments();
+    }
+
+    private async Task ApproveAppointment(AppointmentDto appointment)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Message"] = $"'{appointment.Title}' başlıklı randevuyu onaylamak istediğinizden emin misiniz?",
+            ["ConfirmText"] = "Onayla",
+            ["CancelText"] = "İptal"
+        };
+
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.Small };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Onay", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            try
+            {
+                await AppointmentService.ApproveAppointmentAsync(appointment.Id, AdminUser);
+                Snackbar.Add("Randevu onaylandı!", Severity.Success);
+                await LoadAppointments();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task RejectAppointment(AppointmentDto appointment)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Appointment"] = appointment
+        };
+
+        var options = new DialogOptions() 
+        { 
+            CloseButton = true, 
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<RejectDialog>("Randevu Reddet", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is string comment && !string.IsNullOrWhiteSpace(comment))
+        {
+            try
+            {
+                await AppointmentService.RejectAppointmentAsync(appointment.Id, AdminUser, comment);
+                Snackbar.Add("Randevu reddedildi!", Severity.Success);
+                await LoadAppointments();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task ShowDetails(AppointmentDto appointment)
+    {
+        var parameters = new DialogParameters
+        {
+            ["Appointment"] = appointment
+        };
+
+        var options = new DialogOptions() 
+        { 
+            MaxWidth = MaxWidth.Medium, 
+            FullWidth = true,
+            CloseButton = true
+        };
+
+        await DialogService.ShowAsync<AppointmentDetailDialog>("Randevu Detayları", parameters, options);
+    }
+}

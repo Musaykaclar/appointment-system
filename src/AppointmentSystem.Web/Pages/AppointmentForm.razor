@@ -1,0 +1,286 @@
+﻿@page "/appointment-form"
+@using AppointmentSystem.Application.DTOs
+@using AppointmentSystem.Application.Services
+@using MudBlazor
+@using MudBlazor.Services
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@inject IAppointmentService AppointmentService
+@inject IBranchService BranchService
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+
+<PageTitle>Randevu Talep Formu</PageTitle>
+
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-6">
+    <MudPaper Elevation="4" Class="pa-6 rounded">
+        <MudText Typo="Typo.h5" Class="mb-4">Randevu Talep Formu</MudText>
+
+        <EditForm Model="@AppointmentModel" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+
+            <MudGrid Spacing="3">
+                <!-- Şube Seçimi -->
+                <MudItem xs="12">
+                    <MudSelect T="int" @bind-Value="selectedBranchId" 
+                               Label="Şube*" 
+                               Variant="Variant.Outlined"
+                               Required="true"
+                               RequiredError="Şube seçimi zorunludur"
+                               FullWidth="true">
+                        <MudSelectItem Value="0">Şube Seçiniz</MudSelectItem>
+                        @foreach (var branch in Branches)
+                        {
+                            <MudSelectItem Value="@branch.Id">@branch.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                    <ValidationMessage For="@(() => AppointmentModel.BranchId)" />
+                </MudItem>
+
+                <!-- Açıklama -->
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="AppointmentModel.Description" 
+                                  Label="Açıklama" 
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Lines="3"
+                                  FullWidth="true" />
+                </MudItem>
+
+                <!-- Talep Tarihi -->
+                <MudItem xs="12" md="6">
+                    <MudDatePicker @bind-Date="selectedDate" 
+                                  Label="Talep Tarihi*" 
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  MinDate="@DateTime.Today"
+                                  RequiredError="Talep tarihi zorunludur"
+                                  FullWidth="true" />
+                    <ValidationMessage For="@(() => AppointmentModel.Date)" />
+                </MudItem>
+
+                <!-- Başlangıç Saati -->
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="startTimeString" 
+                                  Label="Başlangıç Saati*" 
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  InputType="InputType.Time"
+                                  OnBlur="OnStartTimeChanged"
+                                  FullWidth="true" />
+                    <ValidationMessage For="@(() => AppointmentModel.StartTime)" />
+                </MudItem>
+
+                <!-- Bitiş Saati -->
+                <MudItem xs="12" md="3">
+                    <MudTextField @bind-Value="endTimeString" 
+                                  Label="Bitiş Saati*" 
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  InputType="InputType.Time"
+                                  OnBlur="OnEndTimeChanged"
+                                  FullWidth="true" />
+                    <ValidationMessage For="@(() => AppointmentModel.EndTime)" />
+                </MudItem>
+
+                <!-- Lokasyon -->
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="Location" 
+                                  Label="Lokasyon" 
+                                  Variant="Variant.Outlined"
+                                  ReadOnly="true"
+                                  Disabled="true"
+                                  FullWidth="true" />
+                </MudItem>
+
+                <!-- Validation Hatası -->
+                @if (!string.IsNullOrEmpty(validationError))
+                {
+                    <MudItem xs="12">
+                        <MudAlert Severity="Severity.Error" Class="mt-2">@validationError</MudAlert>
+                    </MudItem>
+                }
+
+                <!-- Gönder Butonu -->
+                <MudItem xs="12" Class="mt-4">
+                    <MudButton ButtonType="ButtonType.Submit" 
+                               Color="Color.Primary" 
+                               Variant="Variant.Filled"
+                               Size="Size.Large"
+                               FullWidth="true"
+                               Disabled="@IsSubmitting">
+                        @if (IsSubmitting)
+                        {
+                            <div class="d-flex align-items-center justify-center">
+                                <MudProgressCircular Class="me-2" Size="Size.Small" Indeterminate="true" />
+                                <span>Gönderiliyor...</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <span>Gönder</span>
+                        }
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </MudPaper>
+</MudContainer>
+
+
+@code {
+    private AppointmentDto AppointmentModel = new();
+    private List<BranchDto> Branches = new();
+    private DateTime? selectedDate
+    {
+        get => AppointmentModel.Date == DateTime.MinValue ? null : AppointmentModel.Date;
+        set
+        {
+            if (value.HasValue)
+            {
+                AppointmentModel.Date = value.Value;
+            }
+            else
+            {
+                AppointmentModel.Date = DateTime.MinValue;
+            }
+            ValidateForm();
+        }
+    }
+    private string Location { get; set; } = string.Empty;
+    private string validationError = string.Empty;
+    private bool IsSubmitting = false;
+    private string startTimeString = string.Empty;
+    private string endTimeString = string.Empty;
+    
+    private int selectedBranchId
+    {
+        get => AppointmentModel.BranchId;
+        set
+        {
+            AppointmentModel.BranchId = value;
+            var branch = Branches.FirstOrDefault(b => b.Id == value);
+            Location = branch?.Location ?? string.Empty;
+            ValidateForm();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Branches = await BranchService.GetAllBranchesAsync();
+    }
+
+
+
+    private void OnStartTimeChanged()
+    {
+        if (TimeSpan.TryParse(startTimeString, out var time))
+        {
+            AppointmentModel.StartTime = time;
+        }
+        ValidateForm();
+    }
+
+    private void OnEndTimeChanged()
+    {
+        if (TimeSpan.TryParse(endTimeString, out var time))
+        {
+            AppointmentModel.EndTime = time;
+        }
+        ValidateForm();
+    }
+
+    private void ValidateForm()
+    {
+        validationError = string.Empty;
+
+        if (AppointmentModel.EndTime <= AppointmentModel.StartTime)
+        {
+            validationError = "Bitiş saati, başlangıç saatinden sonra olmalıdır.";
+            return;
+        }
+
+        if (AppointmentModel.Date < DateTime.Today)
+        {
+            validationError = "Talep tarihi bugünden önce olamaz.";
+            return;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        validationError = string.Empty;
+
+        // Saat string'lerini TimeSpan'e çevir
+        if (!string.IsNullOrWhiteSpace(startTimeString) && TimeSpan.TryParse(startTimeString, out var startTime))
+        {
+            AppointmentModel.StartTime = startTime;
+        }
+        if (!string.IsNullOrWhiteSpace(endTimeString) && TimeSpan.TryParse(endTimeString, out var endTime))
+        {
+            AppointmentModel.EndTime = endTime;
+        }
+
+        // Doğrulama kuralları
+        if (AppointmentModel.EndTime <= AppointmentModel.StartTime)
+        {
+            validationError = "Bitiş saati, başlangıç saatinden sonra olmalıdır.";
+            Snackbar.Add(validationError, Severity.Error);
+            return;
+        }
+
+        if (AppointmentModel.Date < DateTime.Today)
+        {
+            validationError = "Talep tarihi bugünden önce olamaz.";
+            Snackbar.Add(validationError, Severity.Error);
+            return;
+        }
+
+        if (AppointmentModel.BranchId <= 0)
+        {
+            validationError = "Şube seçimi zorunludur.";
+            Snackbar.Add(validationError, Severity.Error);
+            return;
+        }
+
+        IsSubmitting = true;
+        try
+        {
+            // Başlık oluştur (eğer yoksa)
+            if (string.IsNullOrWhiteSpace(AppointmentModel.Title))
+            {
+                var branch = Branches.FirstOrDefault(b => b.Id == AppointmentModel.BranchId);
+                AppointmentModel.Title = $"{branch?.Name ?? "Randevu"} - {AppointmentModel.Date:dd.MM.yyyy}";
+            }
+
+            // Talep eden kullanıcı (gerçek uygulamada authentication'dan gelecek)
+            if (string.IsNullOrWhiteSpace(AppointmentModel.RequestedBy))
+            {
+                AppointmentModel.RequestedBy = "Kullanıcı"; // Geçici
+            }
+
+            await AppointmentService.CreateAppointmentAsync(AppointmentModel);
+            Snackbar.Add("Randevu talebi başarıyla gönderildi!", Severity.Success);
+            
+            // Formu temizle
+            AppointmentModel = new AppointmentDto();
+            AppointmentModel.Date = DateTime.MinValue; // selectedDate property'si bunu null olarak gösterecek
+            Location = string.Empty;
+            startTimeString = string.Empty;
+            endTimeString = string.Empty;
+            
+            // Listeye yönlendir
+            await Task.Delay(1000);
+            NavigationManager.NavigateTo("/appointments");
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+}
