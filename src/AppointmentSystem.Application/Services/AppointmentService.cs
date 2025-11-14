@@ -1,22 +1,34 @@
 using AppointmentSystem.Application.DTOs;
 using AppointmentSystem.Domain.Entities;
+using AppointmentSystem.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace AppointmentSystem.Application.Services
 {
     public class AppointmentService : IAppointmentService
     {
-        private readonly List<AppointmentDto> _appointments = new();
-        private readonly List<AppointmentAuditDto> _audits = new();
-        private int _nextId = 1;
+        private readonly AppointmentDbContext _context;
 
-        public Task<PagedResult<AppointmentDto>> GetAppointmentsAsync(AppointmentFilterDto filter)
+        public AppointmentService(AppointmentDbContext context)
         {
-            var query = _appointments.AsQueryable();
+            _context = context;
+        }
+
+        public async Task<PagedResult<AppointmentDto>> GetAppointmentsAsync(AppointmentFilterDto filter)
+        {
+            var query = _context.Appointments
+                .Include(a => a.Branch)
+                .AsQueryable();
 
             // Filtreleme
             if (filter.Status.HasValue)
             {
                 query = query.Where(a => a.Status == filter.Status.Value);
+            }
+
+            if (filter.BranchId.HasValue)
+            {
+                query = query.Where(a => a.BranchId == filter.BranchId.Value);
             }
 
             if (filter.StartDate.HasValue)
@@ -38,62 +50,124 @@ namespace AppointmentSystem.Application.Services
             }
 
             // Sıralama
+            var sortDescending = filter.SortDescending ?? false;
             query = filter.SortBy?.ToLower() switch
             {
-                "date" => filter.SortDescending 
+                "date" => sortDescending 
                     ? query.OrderByDescending(a => a.Date) 
                     : query.OrderBy(a => a.Date),
-                "status" => filter.SortDescending 
+                "status" => sortDescending 
                     ? query.OrderByDescending(a => a.Status) 
                     : query.OrderBy(a => a.Status),
+                "requestedby" => sortDescending
+                    ? query.OrderByDescending(a => a.RequestedBy)
+                    : query.OrderBy(a => a.RequestedBy),
                 _ => query.OrderByDescending(a => a.Date)
             };
 
-            var totalCount = query.Count();
-            var items = query
+            var totalCount = await query.CountAsync();
+            var items = await query
                 .Skip((filter.PageNumber - 1) * filter.PageSize)
                 .Take(filter.PageSize)
-                .ToList();
+                .Select(a => new AppointmentDto
+                {
+                    Id = a.Id,
+                    BranchId = a.BranchId,
+                    BranchName = a.Branch.Name,
+                    BranchLocation = a.Branch.Location,
+                    RequestedBy = a.RequestedBy,
+                    Title = a.Title,
+                    Date = a.Date,
+                    StartTime = a.StartTime,
+                    EndTime = a.EndTime,
+                    Description = a.Description,
+                    Status = a.Status,
+                    AdminComment = a.AdminComment
+                })
+                .ToListAsync();
 
-            return Task.FromResult(new PagedResult<AppointmentDto>
+            return new PagedResult<AppointmentDto>
             {
                 Items = items,
                 TotalCount = totalCount,
                 PageNumber = filter.PageNumber,
                 PageSize = filter.PageSize
-            });
+            };
         }
 
-        public Task<PagedResult<AppointmentDto>> GetPendingAppointmentsAsync(AppointmentFilterDto filter)
+        public async Task<PagedResult<AppointmentDto>> GetPendingAppointmentsAsync(AppointmentFilterDto filter)
         {
             filter.Status = AppointmentStatus.Pending;
-            return GetAppointmentsAsync(filter);
+            return await GetAppointmentsAsync(filter);
         }
 
-        public Task<AppointmentDto?> GetAppointmentByIdAsync(int id)
+        public async Task<AppointmentDto?> GetAppointmentByIdAsync(int id)
         {
-            return Task.FromResult(_appointments.FirstOrDefault(a => a.Id == id));
+            var appointment = await _context.Appointments
+                .Include(a => a.Branch)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
+            if (appointment == null) return null;
+
+            return new AppointmentDto
+            {
+                Id = appointment.Id,
+                BranchId = appointment.BranchId,
+                BranchName = appointment.Branch.Name,
+                BranchLocation = appointment.Branch.Location,
+                RequestedBy = appointment.RequestedBy,
+                Title = appointment.Title,
+                Date = appointment.Date,
+                StartTime = appointment.StartTime,
+                EndTime = appointment.EndTime,
+                Description = appointment.Description,
+                Status = appointment.Status,
+                AdminComment = appointment.AdminComment
+            };
         }
 
-        public Task<List<AppointmentAuditDto>> GetAppointmentAuditsAsync(int appointmentId)
+        public async Task<List<AppointmentAuditDto>> GetAppointmentAuditsAsync(int appointmentId)
         {
-            var audits = _audits
+            return await _context.AppointmentAudits
                 .Where(a => a.AppointmentId == appointmentId)
                 .OrderByDescending(a => a.ActionAt)
-                .ToList();
-            return Task.FromResult(audits);
+                .Select(a => new AppointmentAuditDto
+                {
+                    AppointmentId = a.AppointmentId,
+                    FromStatus = a.FromStatus,
+                    ToStatus = a.ToStatus,
+                    ActionBy = a.ActionBy,
+                    ActionAt = a.ActionAt,
+                    Comment = a.Comment
+                })
+                .ToListAsync();
         }
 
-        public Task CreateAppointmentAsync(AppointmentDto dto)
+        public async Task CreateAppointmentAsync(AppointmentDto dto)
         {
-            dto.Id = _nextId++;
-            dto.Status = AppointmentStatus.Pending; // Gönder butonu ile Pending durumuna çekilir
-            _appointments.Add(dto);
+            var appointment = new Appointment
+            {
+                BranchId = dto.BranchId,
+                RequestedBy = dto.RequestedBy,
+                Title = dto.Title,
+                Date = dto.Date,
+                StartTime = dto.StartTime,
+                EndTime = dto.EndTime,
+                Description = dto.Description,
+                Status = AppointmentStatus.Pending, // Gönder butonu ile Pending durumuna çekilir
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Appointments.Add(appointment);
+            await _context.SaveChangesAsync();
+
+            // Oluşturulan appointment'ın Id'sini dto'ya yaz
+            dto.Id = appointment.Id;
 
             // Audit kaydı
-            _audits.Add(new AppointmentAuditDto
+            _context.AppointmentAudits.Add(new AppointmentAudit
             {
-                AppointmentId = dto.Id,
+                AppointmentId = appointment.Id,
                 FromStatus = AppointmentStatus.Draft,
                 ToStatus = AppointmentStatus.Pending,
                 ActionBy = dto.RequestedBy,
@@ -101,12 +175,12 @@ namespace AppointmentSystem.Application.Services
                 Comment = "Randevu talebi gönderildi"
             });
 
-            return Task.CompletedTask;
+            await _context.SaveChangesAsync();
         }
 
-        public Task UpdateAppointmentAsync(AppointmentDto dto)
+        public async Task UpdateAppointmentAsync(AppointmentDto dto)
         {
-            var existing = _appointments.FirstOrDefault(a => a.Id == dto.Id);
+            var existing = await _context.Appointments.FindAsync(dto.Id);
             if (existing != null)
             {
                 var oldStatus = existing.Status;
@@ -117,10 +191,11 @@ namespace AppointmentSystem.Application.Services
                 existing.BranchId = dto.BranchId;
                 existing.Description = dto.Description;
                 existing.Status = dto.Status;
+                existing.UpdatedAt = DateTime.UtcNow;
 
                 if (oldStatus != dto.Status)
                 {
-                    _audits.Add(new AppointmentAuditDto
+                    _context.AppointmentAudits.Add(new AppointmentAudit
                     {
                         AppointmentId = dto.Id,
                         FromStatus = oldStatus,
@@ -130,19 +205,21 @@ namespace AppointmentSystem.Application.Services
                         Comment = "Randevu güncellendi"
                     });
                 }
+
+                await _context.SaveChangesAsync();
             }
-            return Task.CompletedTask;
         }
 
-        public Task ApproveAppointmentAsync(int id, string adminUser)
+        public async Task ApproveAppointmentAsync(int id, string adminUser)
         {
-            var appointment = _appointments.FirstOrDefault(a => a.Id == id);
+            var appointment = await _context.Appointments.FindAsync(id);
             if (appointment != null && appointment.Status == AppointmentStatus.Pending)
             {
                 var oldStatus = appointment.Status;
                 appointment.Status = AppointmentStatus.Approved;
+                appointment.UpdatedAt = DateTime.UtcNow;
 
-                _audits.Add(new AppointmentAuditDto
+                _context.AppointmentAudits.Add(new AppointmentAudit
                 {
                     AppointmentId = id,
                     FromStatus = oldStatus,
@@ -151,20 +228,22 @@ namespace AppointmentSystem.Application.Services
                     ActionAt = DateTime.UtcNow,
                     Comment = "Randevu onaylandı"
                 });
+
+                await _context.SaveChangesAsync();
             }
-            return Task.CompletedTask;
         }
 
-        public Task RejectAppointmentAsync(int id, string adminUser, string comment)
+        public async Task RejectAppointmentAsync(int id, string adminUser, string comment)
         {
-            var appointment = _appointments.FirstOrDefault(a => a.Id == id);
+            var appointment = await _context.Appointments.FindAsync(id);
             if (appointment != null && appointment.Status == AppointmentStatus.Pending)
             {
                 var oldStatus = appointment.Status;
                 appointment.Status = AppointmentStatus.Rejected;
                 appointment.AdminComment = comment;
+                appointment.UpdatedAt = DateTime.UtcNow;
 
-                _audits.Add(new AppointmentAuditDto
+                _context.AppointmentAudits.Add(new AppointmentAudit
                 {
                     AppointmentId = id,
                     FromStatus = oldStatus,
@@ -173,8 +252,9 @@ namespace AppointmentSystem.Application.Services
                     ActionAt = DateTime.UtcNow,
                     Comment = comment
                 });
+
+                await _context.SaveChangesAsync();
             }
-            return Task.CompletedTask;
         }
     }
 }

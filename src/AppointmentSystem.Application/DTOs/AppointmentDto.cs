@@ -21,11 +21,12 @@ namespace AppointmentSystem.Application.DTOs
     public class AppointmentFilterDto
     {
         public AppointmentStatus? Status { get; set; }
+        public int? BranchId { get; set; }
         public DateTime? StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public string? SearchText { get; set; }
         public string? SortBy { get; set; }
-        public bool SortDescending { get; set; }
+        public bool? SortDescending { get; set; }
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
     }

@@ -1,58 +1,16 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="d-flex" style="min-height: 100vh;">
-
-    <!-- SIDEBAR -->
-    <div class="sidebar bg-dark text-white p-3">
-        <h4 class="text-center mb-4">Randevu Sistemi</h4>
-
-        <ul class="nav flex-column">
-
-            <li class="nav-item mb-2">
-                <a href="/appointments" class="nav-link text-white sidebar-link">
-                    <i class="bi bi-list-task me-2"></i> Randevularım
-                </a>
-            </li>
-
-            <li class="nav-item mb-2">
-                <a href="/appointment-form" class="nav-link text-white sidebar-link">
-                    <i class="bi bi-calendar-plus me-2"></i> Randevu Ekle
-                </a>
-            </li>
-
-            <li class="nav-item mb-2">
-                <a href="/admin-appointments" class="nav-link text-white sidebar-link">
-                    <i class="bi bi-shield-lock me-2"></i> Yönetici Paneli
-                </a>
-            </li>
-
-        </ul>
+<div class="layout-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h4>Randevu Sistemi</h4>
+        </div>
+        <NavMenu />
     </div>
 
-    <!-- SAYFA İÇERİĞİ -->
-    <div class="content flex-fill p-4">
+    <!-- Main Content -->
+    <div class="main-content">
         @Body
     </div>
 </div>
-
-<style>
-    .sidebar {
-        width: 260px;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.3);
-    }
-
-    .sidebar-link {
-        border-radius: 6px;
-        padding: 10px 12px;
-        transition: 0.3s;
-    }
-
-    .sidebar-link:hover {
-        background: rgba(255,255,255,0.2);
-        padding-left: 18px;
-    }
-
-    .content {
-        background: #f5f6fa;
-    }
-</style>

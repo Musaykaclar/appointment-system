@@ -66,16 +66,18 @@
                 <MudTimeline>
                     @foreach (var audit in Audits)
                     {
-                        <MudTimelineItem Size="Size.Small">
+                        <MudTimelineItem Size="Size.Small" Color="@GetAuditColor(audit.ToStatus)">
                             <MudText Typo="Typo.body2">
-                                <strong>@audit.FromStatus</strong> → <strong>@audit.ToStatus</strong>
+                                <strong>@GetStatusText(audit.FromStatus)</strong> → <strong>@GetStatusText(audit.ToStatus)</strong>
                             </MudText>
                             <MudText Typo="Typo.caption" Color="Color.Secondary">
                                 @audit.ActionBy - @audit.ActionAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm")
                             </MudText>
                             @if (!string.IsNullOrEmpty(audit.Comment))
                             {
-                                <MudText Typo="Typo.body2" Class="mt-1">@audit.Comment</MudText>
+                                <MudPaper Elevation="0" Class="pa-2 mt-2" Style="background-color: #f5f5f5;">
+                                    <MudText Typo="Typo.body2">@audit.Comment</MudText>
+                                </MudPaper>
                             }
                         </MudTimelineItem>
                     }
@@ -83,7 +85,9 @@
             }
             else
             {
-                <MudText Typo="Typo.body2" Color="Color.Secondary">Henüz durum değişikliği yok.</MudText>
+                <MudAlert Severity="Severity.Info">
+                    Henüz durum değişikliği yok.
+                </MudAlert>
             }
         }
     </DialogContent>
@@ -116,6 +120,28 @@
             AppointmentSystem.Domain.Entities.AppointmentStatus.Approved => Color.Success,
             AppointmentSystem.Domain.Entities.AppointmentStatus.Rejected => Color.Error,
             _ => Color.Default
+        };
+    }
+
+    private string GetStatusText(AppointmentSystem.Domain.Entities.AppointmentStatus status)
+    {
+        return status switch
+        {
+            AppointmentSystem.Domain.Entities.AppointmentStatus.Draft => "Taslak",
+            AppointmentSystem.Domain.Entities.AppointmentStatus.Pending => "Beklemede",
+            AppointmentSystem.Domain.Entities.AppointmentStatus.Approved => "Onaylandı",
+            AppointmentSystem.Domain.Entities.AppointmentStatus.Rejected => "Reddedildi",
+            _ => status.ToString()
+        };
+    }
+
+    private Color GetAuditColor(AppointmentSystem.Domain.Entities.AppointmentStatus status)
+    {
+        return status switch
+        {
+            AppointmentSystem.Domain.Entities.AppointmentStatus.Approved => Color.Success,
+            AppointmentSystem.Domain.Entities.AppointmentStatus.Rejected => Color.Error,
+            _ => Color.Info
         };
     }
 

@@ -1,33 +1,18 @@
-﻿<div class="top-row ps-3 navbar navbar-dark bg-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">AppointmentSystem.Web</a>
-        <button class="navbar-toggler" type="button" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
-</div>
+﻿@using Microsoft.AspNetCore.Components.Routing
 
-<div class="@NavMenuCssClass sidebar bg-dark text-white p-3">
-    <nav class="flex-column">
-        <NavLink href="/appointments" class="nav-link sidebar-link" Match="NavLinkMatch.All">
-            <i class="bi bi-list-task me-2"></i> Randevularım
-        </NavLink>
-        <NavLink href="/appointment-form" class="nav-link sidebar-link">
-            <i class="bi bi-calendar-plus me-2"></i> Randevu Ekle
-        </NavLink>
-        <NavLink href="/admin-appointments" class="nav-link sidebar-link">
-            <i class="bi bi-shield-lock me-2"></i> Yönetici Paneli
-        </NavLink>
-    </nav>
-</div>
-
-@code {
-    private bool collapseNavMenu = true;
-
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : "sidebar";
-
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
-}
+<nav class="sidebar-nav">
+    <NavLink href="/appointments" class="sidebar-link" Match="NavLinkMatch.Prefix">
+        <span class="nav-icon">📋</span>
+        <span class="nav-text">Randevularım</span>
+    </NavLink>
+    
+    <NavLink href="/appointment-form" class="sidebar-link">
+        <span class="nav-icon">➕</span>
+        <span class="nav-text">Randevu Talep Formu</span>
+    </NavLink>
+    
+    <NavLink href="/admin-appointments" class="sidebar-link">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-text">Yönetici Paneli</span>
+    </NavLink>
+</nav>
