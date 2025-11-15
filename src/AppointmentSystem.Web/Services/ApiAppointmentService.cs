@@ -1,6 +1,6 @@
 using AppointmentSystem.Application.DTOs;
 using AppointmentSystem.Application.Services;
-using AppointmentSystem.Domain.Entities;
+using AppointmentSystem.Web.Helpers;
 using System.Net.Http.Json;
 
 namespace AppointmentSystem.Web.Services
@@ -27,23 +27,8 @@ namespace AppointmentSystem.Web.Services
 
         public async Task<PagedResult<AppointmentDto>> GetAppointmentsAsync(AppointmentFilterDto filter)
         {
-            var queryParams = new List<string>();
-            if (filter.Status.HasValue) queryParams.Add($"Status={(int)filter.Status.Value}");
-            if (filter.BranchId.HasValue) queryParams.Add($"BranchId={filter.BranchId.Value}");
-            if (filter.StartDate.HasValue) queryParams.Add($"StartDate={filter.StartDate.Value:yyyy-MM-dd}");
-            if (filter.EndDate.HasValue) queryParams.Add($"EndDate={filter.EndDate.Value:yyyy-MM-dd}");
-            if (!string.IsNullOrWhiteSpace(filter.SearchText)) queryParams.Add($"SearchText={Uri.EscapeDataString(filter.SearchText)}");
-            if (!string.IsNullOrWhiteSpace(filter.SortBy)) queryParams.Add($"SortBy={filter.SortBy}");
-            if (filter.SortDescending.HasValue) queryParams.Add($"SortDescending={filter.SortDescending.Value}");
-            if (filter.PageNumber.HasValue) queryParams.Add($"PageNumber={filter.PageNumber.Value}");
-            if (filter.PageSize.HasValue) queryParams.Add($"PageSize={filter.PageSize.Value}");
-            if (filter.RequestedById.HasValue) queryParams.Add($"RequestedById={filter.RequestedById.Value}");
-
-            var url = "/api/appointments";
-            if (queryParams.Any())
-            {
-                url += "?" + string.Join("&", queryParams);
-            }
+            var queryString = QueryStringHelper.BuildQueryString(filter);
+            var url = $"/api/appointments{queryString}";
             
             var response = await _httpClient.GetFromJsonAsync<PagedResult<AppointmentDto>>(url);
             return response ?? new PagedResult<AppointmentDto>();
@@ -51,22 +36,8 @@ namespace AppointmentSystem.Web.Services
 
         public async Task<PagedResult<AppointmentDto>> GetPendingAppointmentsAsync(AppointmentFilterDto filter)
         {
-            var queryParams = new List<string>();
-            if (filter.BranchId.HasValue) queryParams.Add($"BranchId={filter.BranchId.Value}");
-            if (filter.StartDate.HasValue) queryParams.Add($"StartDate={filter.StartDate.Value:yyyy-MM-dd}");
-            if (filter.EndDate.HasValue) queryParams.Add($"EndDate={filter.EndDate.Value:yyyy-MM-dd}");
-            if (!string.IsNullOrWhiteSpace(filter.SearchText)) queryParams.Add($"SearchText={Uri.EscapeDataString(filter.SearchText)}");
-            if (!string.IsNullOrWhiteSpace(filter.SortBy)) queryParams.Add($"SortBy={Uri.EscapeDataString(filter.SortBy)}");
-            if (filter.SortDescending.HasValue) queryParams.Add($"SortDescending={filter.SortDescending.Value}");
-            if (filter.PageNumber.HasValue) queryParams.Add($"PageNumber={filter.PageNumber.Value}");
-            if (filter.PageSize.HasValue) queryParams.Add($"PageSize={filter.PageSize.Value}");
-            if (filter.RequestedById.HasValue) queryParams.Add($"RequestedById={filter.RequestedById.Value}");
-
-            var url = "/api/appointments/pending";
-            if (queryParams.Any())
-            {
-                url += "?" + string.Join("&", queryParams);
-            }
+            var queryString = QueryStringHelper.BuildQueryString(filter);
+            var url = $"/api/appointments/pending{queryString}";
             
             var response = await _httpClient.GetFromJsonAsync<PagedResult<AppointmentDto>>(url);
             return response ?? new PagedResult<AppointmentDto>();
@@ -105,12 +76,14 @@ namespace AppointmentSystem.Web.Services
 
         public async Task ApproveAppointmentAsync(int id, string adminUser)
         {
+            AddAuthHeaders();
             var response = await _httpClient.PostAsJsonAsync($"/api/appointments/{id}/approve", new { AdminUser = adminUser });
             response.EnsureSuccessStatusCode();
         }
 
         public async Task RejectAppointmentAsync(int id, string adminUser, string comment)
         {
+            AddAuthHeaders();
             var response = await _httpClient.PostAsJsonAsync($"/api/appointments/{id}/reject", new { AdminUser = adminUser, Comment = comment });
             response.EnsureSuccessStatusCode();
         }

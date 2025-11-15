@@ -61,9 +61,7 @@
             <MudLink Href="/register" Typo="Typo.body2">Kayıt olun</MudLink>
         </MudText>
         
-        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="text-center">
-            <strong>Test Yönetici:</strong> admin / admin123
-        </MudText>
+        
     </MudPaper>
 </MudContainer>
 
@@ -72,12 +70,22 @@
     private bool IsLoading = false;
     private string errorMessage = string.Empty;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        // Initialization'ı bekle
+        await AuthState.WaitForInitializationAsync();
+        
         // Eğer zaten giriş yapılmışsa ana sayfaya yönlendir
         if (AuthState.IsAuthenticated)
         {
-            Navigation.NavigateTo("/");
+            if (AuthState.IsAdmin)
+            {
+                Navigation.NavigateTo("/admin-appointments");
+            }
+            else
+            {
+                Navigation.NavigateTo("/appointments");
+            }
         }
     }
 

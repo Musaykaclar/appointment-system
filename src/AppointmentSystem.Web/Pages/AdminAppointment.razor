@@ -208,6 +208,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Initialization'ı bekle
+        await AuthState.WaitForInitializationAsync();
+        
         // Admin kontrolü
         if (!AuthState.IsAuthenticated || !AuthState.IsAdmin)
         {
@@ -293,6 +296,7 @@
             var dialog = await DialogService.ShowAsync<ConfirmDialog>("Onay", parameters, options);
             var result = await dialog.Result;
 
+            // Dialog iptal edilmediyse ve result varsa onayla
             if (result != null && !result.Canceled)
             {
                 IsLoading = true;
@@ -301,20 +305,19 @@
                 try
                 {
                     var adminName = AuthState.CurrentUser?.FullName ?? AuthState.CurrentUser?.Username ?? "Admin";
-                    Console.WriteLine($"Onaylanıyor: Appointment ID = {appointment.Id}, Admin = {adminName}");
                     await AppointmentService.ApproveAppointmentAsync(appointment.Id, adminName);
                     Snackbar.Add("Randevu onaylandı!", Severity.Success);
+                    
+                    // Listeyi yenile
                     await LoadAppointments();
                 }
                 catch (HttpRequestException ex)
                 {
                     Snackbar.Add($"API hatası: {ex.Message}", Severity.Error);
-                    Console.WriteLine($"API Hatası: {ex}");
                 }
                 catch (Exception ex)
                 {
                     Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
-                    Console.WriteLine($"Onaylama hatası: {ex}");
                 }
                 finally
                 {
@@ -326,7 +329,6 @@
         catch (Exception ex)
         {
             Snackbar.Add($"Dialog hatası: {ex.Message}", Severity.Error);
-            Console.WriteLine($"Dialog hatası: {ex}");
         }
     }
 
@@ -357,20 +359,19 @@
                 try
                 {
                     var adminName = AuthState.CurrentUser?.FullName ?? AuthState.CurrentUser?.Username ?? "Admin";
-                    Console.WriteLine($"Reddediliyor: Appointment ID = {appointment.Id}, Admin = {adminName}, Comment = {comment}");
                     await AppointmentService.RejectAppointmentAsync(appointment.Id, adminName, comment);
                     Snackbar.Add("Randevu reddedildi!", Severity.Success);
+                    
+                    // Listeyi yenile
                     await LoadAppointments();
                 }
                 catch (HttpRequestException ex)
                 {
                     Snackbar.Add($"API hatası: {ex.Message}", Severity.Error);
-                    Console.WriteLine($"API Hatası: {ex}");
                 }
                 catch (Exception ex)
                 {
                     Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
-                    Console.WriteLine($"Reddetme hatası: {ex}");
                 }
                 finally
                 {
@@ -382,15 +383,21 @@
         catch (Exception ex)
         {
             Snackbar.Add($"Dialog hatası: {ex.Message}", Severity.Error);
-            Console.WriteLine($"Dialog hatası: {ex}");
         }
     }
 
     private async Task ShowDetails(AppointmentDto appointment)
     {
+        // Önce güncel randevu bilgilerini yükle
+        var currentAppointment = await AppointmentService.GetAppointmentByIdAsync(appointment.Id);
+        if (currentAppointment == null)
+        {
+            currentAppointment = appointment;
+        }
+
         var parameters = new DialogParameters
         {
-            ["Appointment"] = appointment
+            ["Appointment"] = currentAppointment
         };
 
         var options = new DialogOptions() 

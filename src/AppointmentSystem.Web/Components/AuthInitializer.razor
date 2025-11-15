@@ -3,12 +3,10 @@
 @implements IAsyncDisposable
 
 @code {
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (firstRender)
-        {
-            await AuthState.InitializeAsync();
-        }
+        // Uygulama başlarken hemen initialization yap
+        await AuthState.InitializeAsync();
     }
 
     public async ValueTask DisposeAsync()

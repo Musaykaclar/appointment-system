@@ -199,6 +199,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Initialization'ı bekle
+        await AuthState.WaitForInitializationAsync();
+        
         // Login kontrolü
         if (!AuthState.IsAuthenticated)
         {

@@ -1,5 +1,6 @@
 using AppointmentSystem.Application.DTOs;
 using AppointmentSystem.Domain.Entities;
+using AppointmentSystem.Web.Constants;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.JSInterop;
@@ -12,8 +13,8 @@ namespace AppointmentSystem.Web.Services
         private readonly IJSRuntime _jsRuntime;
         private UserDto? _currentUser;
         private string? _token;
-        private const string StorageKeyUser = "auth_user";
-        private const string StorageKeyToken = "auth_token";
+        private bool _isInitialized = false;
+        private readonly SemaphoreSlim _initSemaphore = new SemaphoreSlim(1, 1);
 
         public AuthStateService(HttpClient httpClient, IJSRuntime jsRuntime)
         {
@@ -24,20 +25,44 @@ namespace AppointmentSystem.Web.Services
         public UserDto? CurrentUser => _currentUser;
         public bool IsAuthenticated => _currentUser != null;
         public bool IsAdmin => _currentUser?.Role == UserRole.Admin;
+        public bool IsInitialized => _isInitialized;
 
         public event Action? OnAuthStateChanged;
 
         public async Task InitializeAsync()
         {
-            await LoadFromLocalStorage();
+            if (_isInitialized)
+                return;
+
+            await _initSemaphore.WaitAsync();
+            try
+            {
+                if (_isInitialized)
+                    return;
+
+                await LoadFromLocalStorage();
+                _isInitialized = true;
+            }
+            finally
+            {
+                _initSemaphore.Release();
+            }
+        }
+
+        public async Task WaitForInitializationAsync()
+        {
+            if (!_isInitialized)
+            {
+                await InitializeAsync();
+            }
         }
 
         private async Task LoadFromLocalStorage()
         {
             try
             {
-                var userJson = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", StorageKeyUser);
-                var token = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", StorageKeyToken);
+                var userJson = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", StorageConstants.AuthUserKey);
+                var token = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", StorageConstants.AuthTokenKey);
 
                 if (!string.IsNullOrEmpty(userJson) && !string.IsNullOrEmpty(token))
                 {
@@ -100,8 +125,8 @@ namespace AppointmentSystem.Web.Services
                 if (_currentUser != null && _token != null)
                 {
                     var userJson = JsonSerializer.Serialize(_currentUser);
-                    await _jsRuntime.InvokeVoidAsync("localStorage.setItem", StorageKeyUser, userJson);
-                    await _jsRuntime.InvokeVoidAsync("localStorage.setItem", StorageKeyToken, _token);
+                    await _jsRuntime.InvokeVoidAsync("localStorage.setItem", StorageConstants.AuthUserKey, userJson);
+                    await _jsRuntime.InvokeVoidAsync("localStorage.setItem", StorageConstants.AuthTokenKey, _token);
                 }
             }
             catch
@@ -114,8 +139,8 @@ namespace AppointmentSystem.Web.Services
         {
             try
             {
-                await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", StorageKeyUser);
-                await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", StorageKeyToken);
+                await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", StorageConstants.AuthUserKey);
+                await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", StorageConstants.AuthTokenKey);
             }
             catch
             {

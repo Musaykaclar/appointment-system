@@ -49,33 +49,15 @@ namespace AppointmentSystem.Application.Services
         public async Task<UserDto?> GetUserByIdAsync(int userId)
         {
             var user = await _context.Users.FindAsync(userId);
-            if (user == null) return null;
-
-            return new UserDto
-            {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-                FullName = user.FullName,
-                Role = user.Role
-            };
+            return user != null ? MapToUserDto(user) : null;
         }
 
         public async Task<RegisterResponseDto> RegisterAsync(RegisterDto registerDto)
         {
-            // Kullanıcı adı kontrolü
-            var existingUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.Username == registerDto.Username || u.Email == registerDto.Email);
-
+            var existingUser = await FindExistingUserAsync(registerDto.Username, registerDto.Email);
             if (existingUser != null)
             {
-                return new RegisterResponseDto
-                {
-                    Success = false,
-                    ErrorMessage = existingUser.Username == registerDto.Username 
-                        ? "Bu kullanıcı adı zaten kullanılıyor" 
-                        : "Bu e-posta adresi zaten kullanılıyor"
-                };
+                return CreateDuplicateUserError(existingUser, registerDto);
             }
 
             // Yeni kullanıcı oluştur (sadece User rolü ile)
@@ -96,14 +78,7 @@ namespace AppointmentSystem.Application.Services
             return new RegisterResponseDto
             {
                 Success = true,
-                User = new UserDto
-                {
-                    Id = newUser.Id,
-                    Username = newUser.Username,
-                    Email = newUser.Email,
-                    FullName = newUser.FullName,
-                    Role = newUser.Role
-                }
+                User = MapToUserDto(newUser)
             };
         }
 
@@ -112,8 +87,31 @@ namespace AppointmentSystem.Application.Services
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Username == username);
 
-            if (user == null) return null;
+            return user != null ? MapToUserDto(user) : null;
+        }
 
+        // Private helper methods
+        private async Task<User?> FindExistingUserAsync(string username, string email)
+        {
+            return await _context.Users
+                .FirstOrDefaultAsync(u => u.Username == username || u.Email == email);
+        }
+
+        private RegisterResponseDto CreateDuplicateUserError(User existingUser, RegisterDto registerDto)
+        {
+            var errorMessage = existingUser.Username == registerDto.Username
+                ? "Bu kullanıcı adı zaten kullanılıyor"
+                : "Bu e-posta adresi zaten kullanılıyor";
+
+            return new RegisterResponseDto
+            {
+                Success = false,
+                ErrorMessage = errorMessage
+            };
+        }
+
+        private UserDto MapToUserDto(User user)
+        {
             return new UserDto
             {
                 Id = user.Id,

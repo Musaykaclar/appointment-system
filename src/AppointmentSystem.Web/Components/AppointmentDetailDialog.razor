@@ -10,51 +10,51 @@
         <MudText Typo="Typo.h6">Randevu Detayları</MudText>
     </TitleContent>
     <DialogContent>
-        @if (Appointment != null)
+        @if (CurrentAppointment != null)
         {
             <MudGrid>
                 <MudItem xs="12" md="6">
                     <MudText Typo="Typo.subtitle2" Color="Color.Primary">Talep No</MudText>
-                    <MudText>@Appointment.Id</MudText>
+                    <MudText>@CurrentAppointment.Id</MudText>
                 </MudItem>
                 <MudItem xs="12" md="6">
                     <MudText Typo="Typo.subtitle2" Color="Color.Primary">Başlık</MudText>
-                    <MudText>@Appointment.Title</MudText>
+                    <MudText>@CurrentAppointment.Title</MudText>
                 </MudItem>
                 <MudItem xs="12" md="6">
                     <MudText Typo="Typo.subtitle2" Color="Color.Primary">Talep Eden</MudText>
-                    <MudText>@Appointment.RequestedBy</MudText>
+                    <MudText>@CurrentAppointment.RequestedBy</MudText>
                 </MudItem>
                 <MudItem xs="12" md="6">
                     <MudText Typo="Typo.subtitle2" Color="Color.Primary">Şube</MudText>
-                    <MudText>@Appointment.BranchName</MudText>
+                    <MudText>@CurrentAppointment.BranchName</MudText>
                 </MudItem>
                 <MudItem xs="12" md="6">
                     <MudText Typo="Typo.subtitle2" Color="Color.Primary">Tarih</MudText>
-                    <MudText>@Appointment.Date.ToShortDateString()</MudText>
+                    <MudText>@CurrentAppointment.Date.ToShortDateString()</MudText>
                 </MudItem>
                 <MudItem xs="12" md="6">
                     <MudText Typo="Typo.subtitle2" Color="Color.Primary">Saat</MudText>
-                    <MudText>@Appointment.StartTime.ToString(@"hh\:mm") - @Appointment.EndTime.ToString(@"hh\:mm")</MudText>
+                    <MudText>@CurrentAppointment.StartTime.ToString(@"hh\:mm") - @CurrentAppointment.EndTime.ToString(@"hh\:mm")</MudText>
                 </MudItem>
                 <MudItem xs="12" md="6">
                     <MudText Typo="Typo.subtitle2" Color="Color.Primary">Durum</MudText>
-                    <MudChip T="string" Color="@GetStatusColor(Appointment.Status)" Size="Size.Small">
-                        @Appointment.Status.ToString()
+                    <MudChip T="string" Color="@GetStatusColor(CurrentAppointment.Status)" Size="Size.Medium" Variant="Variant.Filled">
+                        @GetStatusText(CurrentAppointment.Status)
                     </MudChip>
                 </MudItem>
-                @if (!string.IsNullOrEmpty(Appointment.Description))
+                @if (!string.IsNullOrEmpty(CurrentAppointment.Description))
                 {
                     <MudItem xs="12">
                         <MudText Typo="Typo.subtitle2" Color="Color.Primary">Açıklama</MudText>
-                        <MudText>@Appointment.Description</MudText>
+                        <MudText>@CurrentAppointment.Description</MudText>
                     </MudItem>
                 }
-                @if (!string.IsNullOrEmpty(Appointment.AdminComment))
+                @if (!string.IsNullOrEmpty(CurrentAppointment.AdminComment))
                 {
                     <MudItem xs="12">
                         <MudText Typo="Typo.subtitle2" Color="Color.Primary">Yönetici Yorumu</MudText>
-                        <MudText>@Appointment.AdminComment</MudText>
+                        <MudText>@CurrentAppointment.AdminComment</MudText>
                     </MudItem>
                 }
             </MudGrid>
@@ -103,12 +103,36 @@
     [Parameter] public AppointmentDto? Appointment { get; set; }
 
     private List<AppointmentAuditDto> Audits { get; set; } = new();
+    private AppointmentDto? CurrentAppointment { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadAppointmentData();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAppointmentData();
+    }
+
+    private async Task LoadAppointmentData()
+    {
         if (Appointment != null)
         {
+            // Randevu bilgilerini yeniden yükle (durum güncellemeleri için)
+            var updatedAppointment = await AppointmentService.GetAppointmentByIdAsync(Appointment.Id);
+            if (updatedAppointment != null)
+            {
+                CurrentAppointment = updatedAppointment;
+            }
+            else
+            {
+                CurrentAppointment = Appointment;
+            }
+
+            // Audit kayıtlarını yükle
             Audits = await AppointmentService.GetAppointmentAuditsAsync(Appointment.Id);
+            StateHasChanged();
         }
     }
 

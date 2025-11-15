@@ -35,7 +35,7 @@
 
     private string RejectComment { get; set; } = string.Empty;
 
-    void Submit()
+    private void Submit()
     {
         if (!string.IsNullOrWhiteSpace(RejectComment) && MudDialog != null)
         {
@@ -43,7 +43,7 @@
         }
     }
 
-    void Cancel() 
+    private void Cancel() 
     {
         if (MudDialog != null)
         {
