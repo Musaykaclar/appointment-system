@@ -31,6 +31,12 @@ namespace AppointmentSystem.Application.Services
                 query = query.Where(a => a.BranchId == filter.BranchId.Value);
             }
 
+            // Kullanıcı filtresi - eğer RequestedById varsa sadece o kullanıcının randevuları
+            if (filter.RequestedById.HasValue)
+            {
+                query = query.Where(a => a.RequestedById == filter.RequestedById.Value);
+            }
+
             if (filter.StartDate.HasValue)
             {
                 query = query.Where(a => a.Date >= filter.StartDate.Value.Date);
@@ -72,6 +78,7 @@ namespace AppointmentSystem.Application.Services
             var pageSize = filter.PageSize ?? 10;
             
             var items = await query
+                .Include(a => a.RequestedByUser)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(a => new AppointmentDto
@@ -80,7 +87,8 @@ namespace AppointmentSystem.Application.Services
                     BranchId = a.BranchId,
                     BranchName = a.Branch.Name,
                     BranchLocation = a.Branch.Location,
-                    RequestedBy = a.RequestedBy,
+                    RequestedBy = a.RequestedByUser != null ? a.RequestedByUser.FullName : a.RequestedBy,
+                    RequestedById = a.RequestedById,
                     Title = a.Title,
                     Date = a.Date,
                     StartTime = a.StartTime,
@@ -110,6 +118,7 @@ namespace AppointmentSystem.Application.Services
         {
             var appointment = await _context.Appointments
                 .Include(a => a.Branch)
+                .Include(a => a.RequestedByUser)
                 .FirstOrDefaultAsync(a => a.Id == id);
 
             if (appointment == null) return null;
@@ -120,7 +129,8 @@ namespace AppointmentSystem.Application.Services
                 BranchId = appointment.BranchId,
                 BranchName = appointment.Branch.Name,
                 BranchLocation = appointment.Branch.Location,
-                RequestedBy = appointment.RequestedBy,
+                RequestedBy = appointment.RequestedByUser != null ? appointment.RequestedByUser.FullName : appointment.RequestedBy,
+                RequestedById = appointment.RequestedById,
                 Title = appointment.Title,
                 Date = appointment.Date,
                 StartTime = appointment.StartTime,
@@ -148,12 +158,13 @@ namespace AppointmentSystem.Application.Services
                 .ToListAsync();
         }
 
-        public async Task CreateAppointmentAsync(AppointmentDto dto)
+        public async Task CreateAppointmentAsync(AppointmentDto dto, int? userId = null)
         {
             var appointment = new Appointment
             {
                 BranchId = dto.BranchId,
                 RequestedBy = dto.RequestedBy,
+                RequestedById = userId,
                 Title = dto.Title,
                 Date = dto.Date,
                 StartTime = dto.StartTime,

@@ -15,6 +15,7 @@ builder.Services.AddDbContext<AppointmentDbContext>(options =>
 // Services
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IBranchService, BranchService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IValidator<AppointmentDto>, AppointmentValidator>();
 
 // CORS
@@ -69,6 +70,39 @@ app.UseCors("AllowBlazorClient");
 
 // API Endpoints
 var apiGroup = app.MapGroup("/api").WithTags("Appointments");
+
+// Authentication endpoints
+apiGroup.MapPost("/auth/login", async (
+    LoginDto loginDto,
+    IAuthService authService) =>
+{
+    var result = await authService.LoginAsync(loginDto);
+    if (result.Success)
+    {
+        return Results.Ok(result);
+    }
+    return Results.Unauthorized();
+}).WithName("Login");
+
+apiGroup.MapPost("/auth/register", async (
+    RegisterDto registerDto,
+    IAuthService authService) =>
+{
+    var result = await authService.RegisterAsync(registerDto);
+    if (result.Success)
+    {
+        return Results.Ok(result);
+    }
+    return Results.BadRequest(result);
+}).WithName("Register");
+
+apiGroup.MapGet("/auth/user/{id}", async (
+    int id,
+    IAuthService authService) =>
+{
+    var user = await authService.GetUserByIdAsync(id);
+    return user != null ? Results.Ok(user) : Results.NotFound();
+}).WithName("GetUserById");
 
 // Branches
 apiGroup.MapGet("/branches", async (IBranchService branchService) =>
@@ -145,7 +179,8 @@ apiGroup.MapGet("/appointments/{id}", async (
 apiGroup.MapPost("/appointments", async (
     AppointmentDto dto,
     IAppointmentService appointmentService,
-    IValidator<AppointmentDto> validator) =>
+    IValidator<AppointmentDto> validator,
+    HttpContext httpContext) =>
 {
     var validationResult = await validator.ValidateAsync(dto);
     if (!validationResult.IsValid)
@@ -153,7 +188,18 @@ apiGroup.MapPost("/appointments", async (
         return Results.BadRequest(validationResult.Errors);
     }
 
-    await appointmentService.CreateAppointmentAsync(dto);
+    // Token'dan userId'yi al (basit implementasyon)
+    int? userId = null;
+    if (httpContext.Request.Headers.TryGetValue("X-User-Id", out var userIdHeader))
+    {
+        if (int.TryParse(userIdHeader.ToString(), out var parsedUserId))
+        {
+            userId = parsedUserId;
+            dto.RequestedById = userId;
+        }
+    }
+
+    await appointmentService.CreateAppointmentAsync(dto, userId);
     
     // Oluşturulan randevuyu geri döndür
     var createdAppointment = await appointmentService.GetAppointmentByIdAsync(dto.Id);

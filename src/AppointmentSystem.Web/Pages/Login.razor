@@ -1,0 +1,124 @@
+@page "/login"
+@using AppointmentSystem.Application.DTOs
+@using AppointmentSystem.Web.Services
+@using MudBlazor
+@inject AuthStateService AuthState
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Giriş Yap</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudPaper Elevation="3" Class="pa-6 rounded-lg">
+        <MudText Typo="Typo.h4" Class="mb-4 text-center">Randevu Sistemi</MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-6 text-center">
+            Lütfen giriş yapın
+        </MudText>
+
+        <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+            
+            <MudTextField @bind-Value="loginModel.Username" 
+                         Label="Kullanıcı Adı" 
+                         Variant="Variant.Outlined"
+                         Required="true"
+                         FullWidth="true"
+                         Class="mb-4"
+                         Disabled="@IsLoading" />
+            
+            <MudTextField @bind-Value="loginModel.Password" 
+                         Label="Şifre" 
+                         Variant="Variant.Outlined"
+                         InputType="InputType.Password"
+                         Required="true"
+                         FullWidth="true"
+                         Class="mb-4"
+                         Disabled="@IsLoading" />
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+            }
+
+            <MudButton ButtonType="ButtonType.Submit" 
+                      Color="Color.Primary" 
+                      Variant="Variant.Filled"
+                      FullWidth="true"
+                      Size="Size.Large"
+                      Disabled="@IsLoading">
+                @if (IsLoading)
+                {
+                    <MudProgressCircular Class="me-2" Size="Size.Small" Indeterminate="true" />
+                }
+                Giriş Yap
+            </MudButton>
+        </EditForm>
+
+        <MudDivider Class="my-4" />
+        
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="text-center mb-2">
+            Hesabınız yok mu? 
+            <MudLink Href="/register" Typo="Typo.body2">Kayıt olun</MudLink>
+        </MudText>
+        
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="text-center">
+            <strong>Test Yönetici:</strong> admin / admin123
+        </MudText>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private LoginDto loginModel = new();
+    private bool IsLoading = false;
+    private string errorMessage = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        // Eğer zaten giriş yapılmışsa ana sayfaya yönlendir
+        if (AuthState.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        IsLoading = true;
+        errorMessage = string.Empty;
+        StateHasChanged();
+
+        try
+        {
+            var success = await AuthState.LoginAsync(loginModel.Username, loginModel.Password);
+            
+            if (success)
+            {
+                Snackbar.Add("Giriş başarılı!", Severity.Success);
+                
+                // Role'e göre yönlendir
+                if (AuthState.IsAdmin)
+                {
+                    Navigation.NavigateTo("/admin-appointments");
+                }
+                else
+                {
+                    Navigation.NavigateTo("/appointments");
+                }
+            }
+            else
+            {
+                errorMessage = "Kullanıcı adı veya şifre hatalı!";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Giriş yapılırken hata oluştu: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+}
+

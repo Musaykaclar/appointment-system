@@ -5,7 +5,9 @@ namespace AppointmentSystem.Domain.Entities
         public int Id { get; set; }
         public int BranchId { get; set; }
         public Branch Branch { get; set; } = null!;
-        public string RequestedBy { get; set; } = string.Empty;
+        public int? RequestedById { get; set; }
+        public User? RequestedByUser { get; set; }
+        public string RequestedBy { get; set; } = string.Empty; // Backward compatibility için
         public string Title { get; set; } = string.Empty;
         public DateTime Date { get; set; }
         public TimeSpan StartTime { get; set; }

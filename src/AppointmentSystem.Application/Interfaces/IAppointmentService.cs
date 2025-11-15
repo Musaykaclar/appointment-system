@@ -9,7 +9,7 @@ namespace AppointmentSystem.Application.Services
         Task<PagedResult<AppointmentDto>> GetPendingAppointmentsAsync(AppointmentFilterDto filter);
         Task<AppointmentDto?> GetAppointmentByIdAsync(int id);
         Task<List<AppointmentAuditDto>> GetAppointmentAuditsAsync(int appointmentId);
-        Task CreateAppointmentAsync(AppointmentDto dto);
+        Task CreateAppointmentAsync(AppointmentDto dto, int? userId = null);
         Task UpdateAppointmentAsync(AppointmentDto dto);
         Task ApproveAppointmentAsync(int id, string adminUser);
         Task RejectAppointmentAsync(int id, string adminUser, string comment);

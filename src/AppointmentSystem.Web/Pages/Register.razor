@@ -1,0 +1,135 @@
+@page "/register"
+@using AppointmentSystem.Application.DTOs
+@using AppointmentSystem.Web.Services
+@using MudBlazor
+@inject AuthStateService AuthState
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Kayıt Ol</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudPaper Elevation="3" Class="pa-6 rounded-lg">
+        <MudText Typo="Typo.h4" Class="mb-4 text-center">Randevu Sistemi</MudText>
+        <MudText Typo="Typo.body1" Color="Color.Secondary" Class="mb-6 text-center">
+            Yeni hesap oluşturun
+        </MudText>
+
+        <EditForm Model="@registerModel" OnValidSubmit="HandleRegister">
+            <DataAnnotationsValidator />
+            
+            <MudTextField @bind-Value="registerModel.FullName" 
+                         Label="Ad Soyad" 
+                         Variant="Variant.Outlined"
+                         Required="true"
+                         FullWidth="true"
+                         Class="mb-4"
+                         Disabled="@IsLoading" />
+            
+            <MudTextField @bind-Value="registerModel.Username" 
+                         Label="Kullanıcı Adı" 
+                         Variant="Variant.Outlined"
+                         Required="true"
+                         FullWidth="true"
+                         Class="mb-4"
+                         Disabled="@IsLoading" />
+            
+            <MudTextField @bind-Value="registerModel.Email" 
+                         Label="E-posta" 
+                         Variant="Variant.Outlined"
+                         InputType="InputType.Email"
+                         Required="true"
+                         FullWidth="true"
+                         Class="mb-4"
+                         Disabled="@IsLoading" />
+            
+            <MudTextField @bind-Value="registerModel.Password" 
+                         Label="Şifre" 
+                         Variant="Variant.Outlined"
+                         InputType="InputType.Password"
+                         Required="true"
+                         FullWidth="true"
+                         Class="mb-4"
+                         Disabled="@IsLoading" />
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4">@errorMessage</MudAlert>
+            }
+
+            <MudButton ButtonType="ButtonType.Submit" 
+                      Color="Color.Primary" 
+                      Variant="Variant.Filled"
+                      FullWidth="true"
+                      Size="Size.Large"
+                      Disabled="@IsLoading">
+                @if (IsLoading)
+                {
+                    <MudProgressCircular Class="me-2" Size="Size.Small" Indeterminate="true" />
+                }
+                Kayıt Ol
+            </MudButton>
+        </EditForm>
+
+        <MudDivider Class="my-4" />
+        
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="text-center">
+            Zaten hesabınız var mı? 
+            <MudLink Href="/login" Typo="Typo.body2">Giriş yapın</MudLink>
+        </MudText>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private RegisterDto registerModel = new();
+    private bool IsLoading = false;
+    private string errorMessage = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        // Eğer zaten giriş yapılmışsa ana sayfaya yönlendir
+        if (AuthState.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+
+    private async Task HandleRegister()
+    {
+        IsLoading = true;
+        errorMessage = string.Empty;
+        StateHasChanged();
+
+        try
+        {
+            var success = await AuthState.RegisterAsync(
+                registerModel.Username, 
+                registerModel.Password,
+                registerModel.Email,
+                registerModel.FullName);
+            
+            if (success)
+            {
+                Snackbar.Add("Kayıt başarılı! Giriş yapılıyor...", Severity.Success);
+                
+                // Otomatik giriş yap ve yönlendir
+                await Task.Delay(500);
+                Navigation.NavigateTo("/appointments");
+            }
+            else
+            {
+                errorMessage = "Kayıt işlemi başarısız! Kullanıcı adı veya e-posta zaten kullanılıyor olabilir.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Kayıt yapılırken hata oluştu: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+}
+

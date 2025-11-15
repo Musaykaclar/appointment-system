@@ -18,7 +18,13 @@ builder.Services.AddScoped(sp => new HttpClient
 });
 
 builder.Services.AddMudServices();
-builder.Services.AddScoped<IAppointmentService, ApiAppointmentService>();
+builder.Services.AddScoped<AuthStateService>();
+builder.Services.AddScoped<IAppointmentService>(sp => 
+{
+    var httpClient = sp.GetRequiredService<HttpClient>();
+    var authState = sp.GetRequiredService<AuthStateService>();
+    return new ApiAppointmentService(httpClient, authState);
+});
 builder.Services.AddScoped<IBranchService, ApiBranchService>();
 
 await builder.Build().RunAsync();

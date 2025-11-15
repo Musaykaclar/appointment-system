@@ -2,6 +2,7 @@
 @using AppointmentSystem.Application.DTOs
 @using AppointmentSystem.Application.Services
 @using AppointmentSystem.Domain.Entities
+@using AppointmentSystem.Web.Services
 @using MudBlazor
 @using MudBlazor.Services
 @using Microsoft.AspNetCore.Components.Forms
@@ -9,6 +10,8 @@
 @inject IBranchService BranchService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject AuthStateService AuthState
+@inject NavigationManager Navigation
 
 <PageTitle>Randevu Listesi</PageTitle>
 
@@ -196,6 +199,21 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Login kontrolü
+        if (!AuthState.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        // Yönetici bu sayfaya erişemez
+        if (AuthState.IsAdmin)
+        {
+            Snackbar.Add("Yöneticiler bu sayfaya erişemez!", Severity.Warning);
+            Navigation.NavigateTo("/admin-appointments");
+            return;
+        }
+
         try
         {
             Branches = await BranchService.GetAllBranchesAsync();
@@ -213,6 +231,16 @@
         StateHasChanged();
         try
         {
+            // Kullanıcı sadece kendi randevularını görsün (admin değilse)
+            if (!AuthState.IsAdmin && AuthState.CurrentUser != null)
+            {
+                Filter.RequestedById = AuthState.CurrentUser.Id;
+            }
+            else
+            {
+                Filter.RequestedById = null; // Admin tüm randevuları görsün
+            }
+            
             PagedResult = await AppointmentService.GetAppointmentsAsync(Filter);
         }
         catch (Exception ex)

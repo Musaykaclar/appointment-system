@@ -8,10 +8,21 @@ namespace AppointmentSystem.Web.Services
     public class ApiAppointmentService : IAppointmentService
     {
         private readonly HttpClient _httpClient;
+        private readonly AuthStateService? _authState;
 
-        public ApiAppointmentService(HttpClient httpClient)
+        public ApiAppointmentService(HttpClient httpClient, AuthStateService? authState = null)
         {
             _httpClient = httpClient;
+            _authState = authState;
+        }
+
+        private void AddAuthHeaders()
+        {
+            if (_authState?.CurrentUser != null)
+            {
+                _httpClient.DefaultRequestHeaders.Remove("X-User-Id");
+                _httpClient.DefaultRequestHeaders.Add("X-User-Id", _authState.CurrentUser.Id.ToString());
+            }
         }
 
         public async Task<PagedResult<AppointmentDto>> GetAppointmentsAsync(AppointmentFilterDto filter)
@@ -26,6 +37,7 @@ namespace AppointmentSystem.Web.Services
             if (filter.SortDescending.HasValue) queryParams.Add($"SortDescending={filter.SortDescending.Value}");
             if (filter.PageNumber.HasValue) queryParams.Add($"PageNumber={filter.PageNumber.Value}");
             if (filter.PageSize.HasValue) queryParams.Add($"PageSize={filter.PageSize.Value}");
+            if (filter.RequestedById.HasValue) queryParams.Add($"RequestedById={filter.RequestedById.Value}");
 
             var url = "/api/appointments";
             if (queryParams.Any())
@@ -48,6 +60,7 @@ namespace AppointmentSystem.Web.Services
             if (filter.SortDescending.HasValue) queryParams.Add($"SortDescending={filter.SortDescending.Value}");
             if (filter.PageNumber.HasValue) queryParams.Add($"PageNumber={filter.PageNumber.Value}");
             if (filter.PageSize.HasValue) queryParams.Add($"PageSize={filter.PageSize.Value}");
+            if (filter.RequestedById.HasValue) queryParams.Add($"RequestedById={filter.RequestedById.Value}");
 
             var url = "/api/appointments/pending";
             if (queryParams.Any())
@@ -70,8 +83,9 @@ namespace AppointmentSystem.Web.Services
             return response ?? new List<AppointmentAuditDto>();
         }
 
-        public async Task CreateAppointmentAsync(AppointmentDto dto)
+        public async Task CreateAppointmentAsync(AppointmentDto dto, int? userId = null)
         {
+            AddAuthHeaders();
             var response = await _httpClient.PostAsJsonAsync("/api/appointments", dto);
             response.EnsureSuccessStatusCode();
             

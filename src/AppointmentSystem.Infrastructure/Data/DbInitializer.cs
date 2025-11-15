@@ -10,6 +10,40 @@ namespace AppointmentSystem.Infrastructure.Data
             // Migration'ları çalıştır
             await context.Database.MigrateAsync();
 
+            // Kullanıcılar
+            if (!await context.Users.AnyAsync())
+            {
+                var users = new[]
+                {
+                    new User 
+                    { 
+                        Username = "admin", 
+                        Password = "admin123", // Gerçek uygulamada hash'lenmiş olmalı
+                        Email = "admin@example.com",
+                        FullName = "Yönetici",
+                        Role = UserRole.Admin,
+                        IsActive = true
+                    },
+                    new User 
+                    { 
+                        Username = "user", 
+                        Password = "user123", // Gerçek uygulamada hash'lenmiş olmalı
+                        Email = "user@example.com",
+                        FullName = "Kullanıcı",
+                        Role = UserRole.User,
+                        IsActive = true
+                    }
+                };
+                context.Users.AddRange(users);
+                await context.SaveChangesAsync();
+                Console.WriteLine($"[DbInitializer] {users.Length} kullanıcı eklendi.");
+            }
+            else
+            {
+                var userCount = await context.Users.CountAsync();
+                Console.WriteLine($"[DbInitializer] {userCount} kullanıcı zaten mevcut.");
+            }
+
             // Şubeler
             if (!await context.Branches.AnyAsync())
             {

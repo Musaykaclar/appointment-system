@@ -6,6 +6,7 @@ namespace AppointmentSystem.Application.DTOs
     {
         public int Id { get; set; }
         public string RequestedBy { get; set; } = string.Empty;
+        public int? RequestedById { get; set; }
         public string Title { get; set; } = string.Empty;
         public DateTime Date { get; set; }
         public TimeSpan StartTime { get; set; }
@@ -29,6 +30,7 @@ namespace AppointmentSystem.Application.DTOs
         public bool? SortDescending { get; set; }
         public int? PageNumber { get; set; }
         public int? PageSize { get; set; }
+        public int? RequestedById { get; set; } // Kullanıcı ID'si - null ise tüm randevular (admin için)
     }
 
     public class PagedResult<T>

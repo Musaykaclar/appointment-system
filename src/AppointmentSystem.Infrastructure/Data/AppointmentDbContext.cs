@@ -15,6 +15,7 @@ namespace AppointmentSystem.Infrastructure.Data
         public DbSet<Appointment> Appointments => Set<Appointment>();
         public DbSet<Branch> Branches => Set<Branch>();
         public DbSet<AppointmentAudit> AppointmentAudits => Set<AppointmentAudit>();
+        public DbSet<User> Users => Set<User>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -60,6 +61,27 @@ namespace AppointmentSystem.Infrastructure.Data
                 entity.HasKey(x => x.Id);
                 entity.Property(x => x.ActionBy).IsRequired().HasMaxLength(100);
                 entity.Property(x => x.Comment).HasMaxLength(500);
+            });
+
+            // User
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.Username).IsRequired().HasMaxLength(50);
+                entity.HasIndex(x => x.Username).IsUnique();
+                entity.Property(x => x.Password).IsRequired().HasMaxLength(255);
+                entity.Property(x => x.Email).IsRequired().HasMaxLength(100);
+                entity.HasIndex(x => x.Email).IsUnique();
+                entity.Property(x => x.FullName).IsRequired().HasMaxLength(100);
+            });
+
+            // Appointment - User ilişkisi
+            modelBuilder.Entity<Appointment>(entity =>
+            {
+                entity.HasOne(x => x.RequestedByUser)
+                      .WithMany()
+                      .HasForeignKey(x => x.RequestedById)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
         }
     }

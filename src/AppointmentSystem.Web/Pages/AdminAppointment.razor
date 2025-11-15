@@ -2,12 +2,15 @@
 @using AppointmentSystem.Application.DTOs
 @using AppointmentSystem.Application.Services
 @using AppointmentSystem.Domain.Entities
+@using AppointmentSystem.Web.Services
 @using MudBlazor
 @using MudBlazor.Services
 @inject IAppointmentService AppointmentService
 @inject IBranchService BranchService
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
+@inject AuthStateService AuthState
+@inject NavigationManager Navigation
 
 <PageTitle>Yönetici Paneli</PageTitle>
 
@@ -202,10 +205,24 @@
     private PagedResult<AppointmentDto> PagedResult = new();
     private bool IsLoading = false;
     private List<BranchDto> Branches = new();
-    private const string AdminUser = "Admin"; // Gerçek uygulamada authentication'dan gelecek
 
     protected override async Task OnInitializedAsync()
     {
+        // Admin kontrolü
+        if (!AuthState.IsAuthenticated || !AuthState.IsAdmin)
+        {
+            Snackbar.Add("Bu sayfaya erişim yetkiniz yok!", Severity.Error);
+            if (AuthState.IsAuthenticated)
+            {
+                Navigation.NavigateTo("/appointments");
+            }
+            else
+            {
+                Navigation.NavigateTo("/login");
+            }
+            return;
+        }
+
         try
         {
             Branches = await BranchService.GetAllBranchesAsync();
@@ -283,8 +300,9 @@
                 
                 try
                 {
-                    Console.WriteLine($"Onaylanıyor: Appointment ID = {appointment.Id}, Admin = {AdminUser}");
-                    await AppointmentService.ApproveAppointmentAsync(appointment.Id, AdminUser);
+                    var adminName = AuthState.CurrentUser?.FullName ?? AuthState.CurrentUser?.Username ?? "Admin";
+                    Console.WriteLine($"Onaylanıyor: Appointment ID = {appointment.Id}, Admin = {adminName}");
+                    await AppointmentService.ApproveAppointmentAsync(appointment.Id, adminName);
                     Snackbar.Add("Randevu onaylandı!", Severity.Success);
                     await LoadAppointments();
                 }
@@ -338,8 +356,9 @@
                 
                 try
                 {
-                    Console.WriteLine($"Reddediliyor: Appointment ID = {appointment.Id}, Admin = {AdminUser}, Comment = {comment}");
-                    await AppointmentService.RejectAppointmentAsync(appointment.Id, AdminUser, comment);
+                    var adminName = AuthState.CurrentUser?.FullName ?? AuthState.CurrentUser?.Username ?? "Admin";
+                    Console.WriteLine($"Reddediliyor: Appointment ID = {appointment.Id}, Admin = {adminName}, Comment = {comment}");
+                    await AppointmentService.RejectAppointmentAsync(appointment.Id, adminName, comment);
                     Snackbar.Add("Randevu reddedildi!", Severity.Success);
                     await LoadAppointments();
                 }
