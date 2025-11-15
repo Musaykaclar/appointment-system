@@ -66,9 +66,14 @@ namespace AppointmentSystem.Application.Services
             };
 
             var totalCount = await query.CountAsync();
+            
+            // Pagination için varsayılan değerler
+            var pageNumber = filter.PageNumber ?? 1;
+            var pageSize = filter.PageSize ?? 10;
+            
             var items = await query
-                .Skip((filter.PageNumber - 1) * filter.PageSize)
-                .Take(filter.PageSize)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .Select(a => new AppointmentDto
                 {
                     Id = a.Id,
@@ -90,8 +95,8 @@ namespace AppointmentSystem.Application.Services
             {
                 Items = items,
                 TotalCount = totalCount,
-                PageNumber = filter.PageNumber,
-                PageSize = filter.PageSize
+                PageNumber = pageNumber,
+                PageSize = pageSize
             };
         }
 

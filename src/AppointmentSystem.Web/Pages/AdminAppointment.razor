@@ -36,10 +36,10 @@
                                Variant="Variant.Outlined"
                                Clearable="true"
                                FullWidth="true">
-                        <MudSelectItem Value="@((int?)null)">Tümü</MudSelectItem>
+                        <MudSelectItem T="int?" Value="@((int?)null)">Tümü</MudSelectItem>
                         @foreach (var branch in Branches)
                         {
-                            <MudSelectItem Value="@branch.Id">@branch.Name</MudSelectItem>
+                            <MudSelectItem T="int?" Value="@branch.Id">@branch.Name</MudSelectItem>
                         }
                     </MudSelect>
                 </MudItem>
@@ -48,16 +48,14 @@
                                    DateChanged="@(async (DateTime? value) => { Filter.StartDate = value; await ApplyFilters(); })"
                                    Label="Başlangıç Tarihi" 
                                    Variant="Variant.Outlined" 
-                                   Clearable="true"
-                                   FullWidth="true"/>
+                                   Clearable="true"/>
                 </MudItem>
                 <MudItem xs="12" md="3">
                     <MudDatePicker Date="@Filter.EndDate"
                                    DateChanged="@(async (DateTime? value) => { Filter.EndDate = value; await ApplyFilters(); })"
                                    Label="Bitiş Tarihi" 
                                    Variant="Variant.Outlined" 
-                                   Clearable="true"
-                                   FullWidth="true"/>
+                                   Clearable="true"/>
                 </MudItem>
                 <MudItem xs="12" md="3">
                     <MudTextField Value="@Filter.SearchText"
@@ -143,7 +141,7 @@
                 <MudTd>
                     <MudText Typo="Typo.body2" 
                              Style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-                             Title="@context.Description">
+                             title="@context.Description">
                         @(string.IsNullOrEmpty(context.Description) ? "-" : context.Description)
                     </MudText>
                 </MudTd>
@@ -153,7 +151,8 @@
                                    Size="Size.Small" 
                                    Variant="Variant.Filled"
                                    StartIcon="@Icons.Material.Filled.Check" 
-                                   OnClick="() => ApproveAppointment(context)" 
+                                   OnClick="@(async () => await ApproveAppointment(context))" 
+                                   Disabled="@IsLoading"
                                    Class="me-2">
                             Onayla
                         </MudButton>
@@ -161,27 +160,29 @@
                                    Size="Size.Small" 
                                    Variant="Variant.Filled"
                                    StartIcon="@Icons.Material.Filled.Close" 
-                                   OnClick="() => RejectAppointment(context)">
+                                   OnClick="@(async () => await RejectAppointment(context))"
+                                   Disabled="@IsLoading">
                             Reddet
                         </MudButton>
                         <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
                                        Color="Color.Primary" 
                                        Size="Size.Small" 
-                                       OnClick="() => ShowDetails(context)" 
+                                       OnClick="@(async () => await ShowDetails(context))" 
+                                       Disabled="@IsLoading"
                                        Class="ms-2"
-                                       Title="Detayları Görüntüle"/>
+                                       title="Detayları Görüntüle"/>
                     </div>
                 </MudTd>
             </RowTemplate>
             <PagerContent>
-                <MudTablePager T="AppointmentDto" 
+                <MudTablePager t="AppointmentDto" 
                                PageSizeOptions="new int[] { 10, 25, 50 }"
                                InfoFormat="{first_item}-{last_item} / {all_items}"
-                               PageSizeChanged="OnPageSizeChanged"
-                               PageChanged="OnPageChanged"
-                               PageSize="@Filter.PageSize"
-                               CurrentPage="@Filter.PageNumber"
-                               TotalItems="@PagedResult.TotalCount" />
+                               pageSizeChanged="OnPageSizeChanged"
+                               pageChanged="OnPageChanged"
+                               pageSize="@Filter.PageSize"
+                               currentPage="@Filter.PageNumber"
+                               totalItems="@PagedResult.TotalCount" />
             </PagerContent>
         </MudTable>
 
@@ -262,63 +263,107 @@
 
     private async Task ApproveAppointment(AppointmentDto appointment)
     {
-        var parameters = new DialogParameters
+        try
         {
-            ["Message"] = $"'{appointment.Title}' başlıklı randevuyu onaylamak istediğinizden emin misiniz?",
-            ["ConfirmText"] = "Onayla",
-            ["CancelText"] = "İptal"
-        };
-
-        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.Small };
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Onay", parameters, options);
-        var result = await dialog.Result;
-
-        if (result != null && !result.Canceled)
-        {
-            try
+            var parameters = new DialogParameters
             {
-                await AppointmentService.ApproveAppointmentAsync(appointment.Id, AdminUser);
-                Snackbar.Add("Randevu onaylandı!", Severity.Success);
-                await LoadAppointments();
+                ["Message"] = $"'{appointment.Title}' başlıklı randevuyu onaylamak istediğinizden emin misiniz?",
+                ["ConfirmText"] = "Onayla",
+                ["CancelText"] = "İptal"
+            };
+
+            var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.Small };
+            var dialog = await DialogService.ShowAsync<ConfirmDialog>("Onay", parameters, options);
+            var result = await dialog.Result;
+
+            if (result != null && !result.Canceled)
+            {
+                IsLoading = true;
                 StateHasChanged();
+                
+                try
+                {
+                    Console.WriteLine($"Onaylanıyor: Appointment ID = {appointment.Id}, Admin = {AdminUser}");
+                    await AppointmentService.ApproveAppointmentAsync(appointment.Id, AdminUser);
+                    Snackbar.Add("Randevu onaylandı!", Severity.Success);
+                    await LoadAppointments();
+                }
+                catch (HttpRequestException ex)
+                {
+                    Snackbar.Add($"API hatası: {ex.Message}", Severity.Error);
+                    Console.WriteLine($"API Hatası: {ex}");
+                }
+                catch (Exception ex)
+                {
+                    Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
+                    Console.WriteLine($"Onaylama hatası: {ex}");
+                }
+                finally
+                {
+                    IsLoading = false;
+                    StateHasChanged();
+                }
             }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
-            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Dialog hatası: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Dialog hatası: {ex}");
         }
     }
 
     private async Task RejectAppointment(AppointmentDto appointment)
     {
-        var parameters = new DialogParameters
+        try
         {
-            ["Appointment"] = appointment
-        };
-
-        var options = new DialogOptions() 
-        { 
-            CloseButton = true, 
-            MaxWidth = MaxWidth.Medium,
-            FullWidth = true
-        };
-
-        var dialog = await DialogService.ShowAsync<RejectDialog>("Randevu Reddet", parameters, options);
-        var result = await dialog.Result;
-
-        if (result != null && !result.Canceled && result.Data is string comment && !string.IsNullOrWhiteSpace(comment))
-        {
-            try
+            var parameters = new DialogParameters
             {
-                await AppointmentService.RejectAppointmentAsync(appointment.Id, AdminUser, comment);
-                Snackbar.Add("Randevu reddedildi!", Severity.Success);
-                await LoadAppointments();
+                ["Appointment"] = appointment
+            };
+
+            var options = new DialogOptions() 
+            { 
+                CloseButton = true, 
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true
+            };
+
+            var dialog = await DialogService.ShowAsync<RejectDialog>("Randevu Reddet", parameters, options);
+            var result = await dialog.Result;
+
+            if (result != null && !result.Canceled && result.Data is string comment && !string.IsNullOrWhiteSpace(comment))
+            {
+                IsLoading = true;
                 StateHasChanged();
+                
+                try
+                {
+                    Console.WriteLine($"Reddediliyor: Appointment ID = {appointment.Id}, Admin = {AdminUser}, Comment = {comment}");
+                    await AppointmentService.RejectAppointmentAsync(appointment.Id, AdminUser, comment);
+                    Snackbar.Add("Randevu reddedildi!", Severity.Success);
+                    await LoadAppointments();
+                }
+                catch (HttpRequestException ex)
+                {
+                    Snackbar.Add($"API hatası: {ex.Message}", Severity.Error);
+                    Console.WriteLine($"API Hatası: {ex}");
+                }
+                catch (Exception ex)
+                {
+                    Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
+                    Console.WriteLine($"Reddetme hatası: {ex}");
+                }
+                finally
+                {
+                    IsLoading = false;
+                    StateHasChanged();
+                }
             }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
-            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Dialog hatası: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Dialog hatası: {ex}");
         }
     }
 

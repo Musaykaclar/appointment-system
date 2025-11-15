@@ -24,8 +24,8 @@ namespace AppointmentSystem.Web.Services
             if (!string.IsNullOrWhiteSpace(filter.SearchText)) queryParams.Add($"SearchText={Uri.EscapeDataString(filter.SearchText)}");
             if (!string.IsNullOrWhiteSpace(filter.SortBy)) queryParams.Add($"SortBy={filter.SortBy}");
             if (filter.SortDescending.HasValue) queryParams.Add($"SortDescending={filter.SortDescending.Value}");
-            queryParams.Add($"PageNumber={filter.PageNumber}");
-            queryParams.Add($"PageSize={filter.PageSize}");
+            if (filter.PageNumber.HasValue) queryParams.Add($"PageNumber={filter.PageNumber.Value}");
+            if (filter.PageSize.HasValue) queryParams.Add($"PageSize={filter.PageSize.Value}");
 
             var url = "/api/appointments";
             if (queryParams.Any())
@@ -46,8 +46,8 @@ namespace AppointmentSystem.Web.Services
             if (!string.IsNullOrWhiteSpace(filter.SearchText)) queryParams.Add($"SearchText={Uri.EscapeDataString(filter.SearchText)}");
             if (!string.IsNullOrWhiteSpace(filter.SortBy)) queryParams.Add($"SortBy={Uri.EscapeDataString(filter.SortBy)}");
             if (filter.SortDescending.HasValue) queryParams.Add($"SortDescending={filter.SortDescending.Value}");
-            queryParams.Add($"PageNumber={filter.PageNumber}");
-            queryParams.Add($"PageSize={filter.PageSize}");
+            if (filter.PageNumber.HasValue) queryParams.Add($"PageNumber={filter.PageNumber.Value}");
+            if (filter.PageSize.HasValue) queryParams.Add($"PageSize={filter.PageSize.Value}");
 
             var url = "/api/appointments/pending";
             if (queryParams.Any())
@@ -74,6 +74,13 @@ namespace AppointmentSystem.Web.Services
         {
             var response = await _httpClient.PostAsJsonAsync("/api/appointments", dto);
             response.EnsureSuccessStatusCode();
+            
+            // Oluşturulan randevuyu response'dan al
+            var createdAppointment = await response.Content.ReadFromJsonAsync<AppointmentDto>();
+            if (createdAppointment != null && createdAppointment.Id > 0)
+            {
+                dto.Id = createdAppointment.Id;
+            }
         }
 
         public async Task UpdateAppointmentAsync(AppointmentDto dto)

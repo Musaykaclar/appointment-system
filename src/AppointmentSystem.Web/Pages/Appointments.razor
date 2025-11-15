@@ -51,10 +51,10 @@
                                Variant="Variant.Outlined"
                                Clearable="true"
                                FullWidth="true">
-                        <MudSelectItem Value="@((int?)null)">Tümü</MudSelectItem>
+                        <MudSelectItem T="int?" Value="@((int?)null)">Tümü</MudSelectItem>
                         @foreach (var branch in Branches)
                         {
-                            <MudSelectItem Value="@branch.Id">@branch.Name</MudSelectItem>
+                            <MudSelectItem T="int?" Value="@branch.Id">@branch.Name</MudSelectItem>
                         }
                     </MudSelect>
                 </MudItem>
@@ -63,16 +63,14 @@
                                    DateChanged="@(async (DateTime? value) => { Filter.StartDate = value; await ApplyFilters(); })"
                                    Label="Başlangıç Tarihi" 
                                    Variant="Variant.Outlined" 
-                                   Clearable="true"
-                                   FullWidth="true"/>
+                                   Clearable="true"/>
                 </MudItem>
                 <MudItem xs="12" md="3">
                     <MudDatePicker Date="@Filter.EndDate"
                                    DateChanged="@(async (DateTime? value) => { Filter.EndDate = value; await ApplyFilters(); })"
                                    Label="Bitiş Tarihi" 
                                    Variant="Variant.Outlined" 
-                                   Clearable="true"
-                                   FullWidth="true"/>
+                                   Clearable="true"/>
                 </MudItem>
                 <MudItem xs="12" md="3">
                     <MudTextField Value="@Filter.SearchText"
@@ -164,18 +162,18 @@
                                    Color="Color.Primary" 
                                    Size="Size.Small"
                                    OnClick="() => ShowDetails(context)" 
-                                   Title="Detayları Görüntüle" />
+                                   title="Detayları Görüntüle" />
                 </MudTd>
             </RowTemplate>
             <PagerContent>
-                <MudTablePager T="AppointmentDto" 
+                <MudTablePager t="AppointmentDto" 
                                PageSizeOptions="new int[] { 10, 25, 50 }"
                                InfoFormat="{first_item}-{last_item} / {all_items}"
-                               PageSizeChanged="OnPageSizeChanged"
-                               PageChanged="OnPageChanged"
-                               PageSize="@Filter.PageSize"
-                               CurrentPage="@Filter.PageNumber"
-                               TotalItems="@PagedResult.TotalCount" />
+                               pageSizeChanged="OnPageSizeChanged"
+                               pageChanged="OnPageChanged"
+                               pageSize="@Filter.PageSize"
+                               currentPage="@Filter.PageNumber"
+                               totalItems="@PagedResult.TotalCount" />
             </PagerContent>
         </MudTable>
 

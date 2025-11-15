@@ -84,7 +84,39 @@ apiGroup.MapGet("/branches/{id}", async (int id, IBranchService branchService) =
 }).WithName("GetBranchById");
 
 // Appointments
-// ÖNEMLİ: /pending route'u /{id} route'undan ÖNCE olmalı
+// ÖNEMLİ: Route sıralaması önemli! Daha spesifik route'lar önce tanımlanmalı
+// 1. Önce spesifik route'lar (approve, reject, audits, pending)
+apiGroup.MapPost("/appointments/{id}/approve", async (
+    int id,
+    ApproveRequest request,
+    IAppointmentService appointmentService) =>
+{
+    await appointmentService.ApproveAppointmentAsync(id, request.AdminUser);
+    return Results.Ok(new { message = "Randevu onaylandı" });
+}).WithName("ApproveAppointment");
+
+apiGroup.MapPost("/appointments/{id}/reject", async (
+    int id,
+    RejectRequest request,
+    IAppointmentService appointmentService) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Comment))
+    {
+        return Results.BadRequest(new { error = "Red nedeni zorunludur" });
+    }
+
+    await appointmentService.RejectAppointmentAsync(id, request.AdminUser, request.Comment);
+    return Results.Ok(new { message = "Randevu reddedildi" });
+}).WithName("RejectAppointment");
+
+apiGroup.MapGet("/appointments/{id}/audits", async (
+    int id,
+    IAppointmentService appointmentService) =>
+{
+    var audits = await appointmentService.GetAppointmentAuditsAsync(id);
+    return Results.Ok(audits);
+}).WithName("GetAppointmentAudits");
+
 apiGroup.MapGet("/appointments/pending", async (
     [AsParameters] AppointmentFilterDto filter,
     IAppointmentService appointmentService) =>
@@ -93,6 +125,7 @@ apiGroup.MapGet("/appointments/pending", async (
     return Results.Ok(result);
 }).WithName("GetPendingAppointments");
 
+// 2. Sonra genel route'lar
 apiGroup.MapGet("/appointments", async (
     [AsParameters] AppointmentFilterDto filter,
     IAppointmentService appointmentService) =>
@@ -108,14 +141,6 @@ apiGroup.MapGet("/appointments/{id}", async (
     var appointment = await appointmentService.GetAppointmentByIdAsync(id);
     return appointment != null ? Results.Ok(appointment) : Results.NotFound();
 }).WithName("GetAppointmentById");
-
-apiGroup.MapGet("/appointments/{id}/audits", async (
-    int id,
-    IAppointmentService appointmentService) =>
-{
-    var audits = await appointmentService.GetAppointmentAuditsAsync(id);
-    return Results.Ok(audits);
-}).WithName("GetAppointmentAudits");
 
 apiGroup.MapPost("/appointments", async (
     AppointmentDto dto,
@@ -160,29 +185,6 @@ apiGroup.MapPut("/appointments/{id}", async (
     await appointmentService.UpdateAppointmentAsync(dto);
     return Results.NoContent();
 }).WithName("UpdateAppointment");
-
-apiGroup.MapPost("/appointments/{id}/approve", async (
-    int id,
-    ApproveRequest request,
-    IAppointmentService appointmentService) =>
-{
-    await appointmentService.ApproveAppointmentAsync(id, request.AdminUser);
-    return Results.Ok(new { message = "Randevu onaylandı" });
-}).WithName("ApproveAppointment");
-
-apiGroup.MapPost("/appointments/{id}/reject", async (
-    int id,
-    RejectRequest request,
-    IAppointmentService appointmentService) =>
-{
-    if (string.IsNullOrWhiteSpace(request.Comment))
-    {
-        return Results.BadRequest(new { error = "Red nedeni zorunludur" });
-    }
-
-    await appointmentService.RejectAppointmentAsync(id, request.AdminUser, request.Comment);
-    return Results.Ok(new { message = "Randevu reddedildi" });
-}).WithName("RejectAppointment");
 
 app.MapGet("/", () => "API Çalışıyor!");
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }));

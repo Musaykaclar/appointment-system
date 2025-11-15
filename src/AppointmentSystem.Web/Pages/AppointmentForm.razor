@@ -31,32 +31,32 @@
                         <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="mb-2" />
                         <MudText Typo="Typo.body2" Color="Color.Secondary">Şubeler yükleniyor...</MudText>
                     }
+                    else if (Branches == null || !Branches.Any())
+                    {
+                        <MudAlert Severity="Severity.Warning">
+                            Şube bulunamadı. Lütfen API'nin çalıştığından emin olun.
+                        </MudAlert>
+                    }
                     else
                     {
                         <MudSelect T="int?" 
-                                   @bind-Value="selectedBranchIdNullable" 
+                                   Value="@selectedBranchIdNullable"
+                                   ValueChanged="@OnBranchChanged"
                                    Label="Şube*" 
                                    Variant="Variant.Outlined"
                                    Required="true"
                                    RequiredError="Şube seçimi zorunludur"
                                    FullWidth="true"
-                                   Clearable="false">
-                            @if (Branches.Any())
+                                   Clearable="false"
+                                   HelperText="Lütfen bir şube seçiniz">
+                            @if (Branches != null && Branches.Any())
                             {
                                 @foreach (var branch in Branches)
                                 {
-                                    <MudSelectItem Value="@branch.Id">@branch.Name</MudSelectItem>
+                                    <MudSelectItem T="int?" @key="@branch.Id" Value="@branch.Id">@branch.Name - @branch.Location</MudSelectItem>
                                 }
                             }
-                            else
-                            {
-                                <MudSelectItem Value="@((int?)null)" Disabled="true">Şube bulunamadı</MudSelectItem>
-                            }
                         </MudSelect>
-                        @if (selectedBranchId <= 0 && !string.IsNullOrEmpty(validationError))
-                        {
-                            <MudText Typo="Typo.caption" Color="Color.Error">Şube seçimi zorunludur</MudText>
-                        }
                     }
                 </MudItem>
 
@@ -79,9 +79,13 @@
                                   Variant="Variant.Outlined"
                                   Required="true"
                                   MinDate="@DateTime.Today"
+                                  MaxDate="@DateTime.Today.AddMonths(6)"
                                   RequiredError="Talep tarihi zorunludur"
-                                  FullWidth="true" />
-                    <ValidationMessage For="@(() => AppointmentModel.Date)" />
+                                  HelperText="Bugünden itibaren 6 ay içinde bir tarih seçiniz" />
+                    @if (selectedDate.HasValue && selectedDate.Value < DateTime.Today)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Error">Talep tarihi bugünden önce olamaz</MudText>
+                    }
                 </MudItem>
 
                 <!-- Başlangıç Saati -->
@@ -194,7 +198,14 @@
         get => AppointmentModel.BranchId > 0 ? AppointmentModel.BranchId : null;
         set
         {
-            AppointmentModel.BranchId = value ?? 0;
+            if (value.HasValue)
+            {
+                AppointmentModel.BranchId = value.Value;
+            }
+            else
+            {
+                AppointmentModel.BranchId = 0;
+            }
             UpdateLocation();
             ValidateForm();
             StateHasChanged();
@@ -202,6 +213,12 @@
     }
     
     private int selectedBranchId => AppointmentModel.BranchId;
+
+    private async Task OnBranchChanged(int? value)
+    {
+        selectedBranchIdNullable = value;
+        await Task.CompletedTask;
+    }
     
     private void UpdateLocation()
     {
@@ -218,13 +235,20 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadBranches();
+    }
+
+    private async Task LoadBranches()
+    {
         IsLoadingBranches = true;
         StateHasChanged();
         
         try
         {
-            Branches = await BranchService.GetAllBranchesAsync();
-            if (!Branches.Any())
+            var loadedBranches = await BranchService.GetAllBranchesAsync();
+            Branches = loadedBranches ?? new List<BranchDto>();
+            
+            if (Branches == null || !Branches.Any())
             {
                 Snackbar.Add("Şube bulunamadı. Lütfen API'nin çalıştığından emin olun.", Severity.Warning);
                 Console.WriteLine("Şube listesi boş döndü.");
@@ -232,17 +256,24 @@
             else
             {
                 Console.WriteLine($"Şubeler başarıyla yüklendi. Toplam: {Branches.Count}");
+                foreach (var branch in Branches)
+                {
+                    Console.WriteLine($"  - {branch.Id}: {branch.Name} ({branch.Location})");
+                }
+                Snackbar.Add($"{Branches.Count} şube yüklendi", Severity.Success);
             }
         }
         catch (HttpRequestException ex)
         {
             Snackbar.Add($"API'ye bağlanılamadı. Lütfen API'nin çalıştığından emin olun. Hata: {ex.Message}", Severity.Error);
             Console.WriteLine($"HTTP Hatası: {ex}");
+            Branches = new List<BranchDto>();
         }
         catch (Exception ex)
         {
             Snackbar.Add($"Şubeler yüklenirken hata oluştu: {ex.Message}", Severity.Error);
             Console.WriteLine($"Şube yükleme hatası: {ex}");
+            Branches = new List<BranchDto>();
         }
         finally
         {
@@ -338,6 +369,8 @@
         }
 
         IsSubmitting = true;
+        StateHasChanged();
+        
         try
         {
             // Başlık oluştur (eğer yoksa)
@@ -359,7 +392,28 @@
                 AppointmentModel.Date = DateTime.SpecifyKind(AppointmentModel.Date.Date, DateTimeKind.Utc);
             }
 
+            // Şube kontrolü
+            if (AppointmentModel.BranchId <= 0)
+            {
+                Snackbar.Add("Lütfen bir şube seçiniz", Severity.Error);
+                IsSubmitting = false;
+                StateHasChanged();
+                return;
+            }
+
+            // Tarih kontrolü
+            if (AppointmentModel.Date < DateTime.Today)
+            {
+                Snackbar.Add("Talep tarihi bugünden önce olamaz", Severity.Error);
+                IsSubmitting = false;
+                StateHasChanged();
+                return;
+            }
+
+            Console.WriteLine($"Randevu gönderiliyor: BranchId={AppointmentModel.BranchId}, Date={AppointmentModel.Date}, StartTime={AppointmentModel.StartTime}, EndTime={AppointmentModel.EndTime}");
+
             await AppointmentService.CreateAppointmentAsync(AppointmentModel);
+            
             Snackbar.Add("Randevu talebi başarıyla gönderildi!", Severity.Success);
             
             // Formu temizle
@@ -375,9 +429,15 @@
             await Task.Delay(1500);
             NavigationManager.NavigateTo("/appointments");
         }
+        catch (HttpRequestException ex)
+        {
+            Snackbar.Add($"API'ye bağlanılamadı: {ex.Message}", Severity.Error);
+            Console.WriteLine($"HTTP Hatası: {ex}");
+        }
         catch (Exception ex)
         {
-            Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Randevu gönderilirken hata oluştu: {ex.Message}", Severity.Error);
+            Console.WriteLine($"Randevu gönderme hatası: {ex}");
         }
         finally
         {
