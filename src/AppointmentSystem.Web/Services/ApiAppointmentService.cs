@@ -1,5 +1,6 @@
 using AppointmentSystem.Application.DTOs;
 using AppointmentSystem.Application.Services;
+using AppointmentSystem.Domain.Entities;
 using AppointmentSystem.Web.Helpers;
 using System.Net.Http.Json;
 
@@ -78,6 +79,13 @@ namespace AppointmentSystem.Web.Services
         {
             AddAuthHeaders();
             var response = await _httpClient.PostAsJsonAsync($"/api/appointments/{id}/approve", new { AdminUser = adminUser });
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Randevu onaylama başarısız: {response.StatusCode} - {errorContent}");
+            }
+            
             response.EnsureSuccessStatusCode();
         }
 
@@ -85,6 +93,27 @@ namespace AppointmentSystem.Web.Services
         {
             AddAuthHeaders();
             var response = await _httpClient.PostAsJsonAsync($"/api/appointments/{id}/reject", new { AdminUser = adminUser, Comment = comment });
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Randevu reddetme başarısız: {response.StatusCode} - {errorContent}");
+            }
+            
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task UpdateStatusAsync(int id, AppointmentStatus toStatus, string actionBy, string? comment = null)
+        {
+            AddAuthHeaders();
+            var response = await _httpClient.PostAsJsonAsync($"/api/appointments/{id}/status", new { ToStatus = toStatus, ActionBy = actionBy, Comment = comment });
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Randevu durumu güncelleme başarısız: {response.StatusCode} - {errorContent}");
+            }
+            
             response.EnsureSuccessStatusCode();
         }
     }

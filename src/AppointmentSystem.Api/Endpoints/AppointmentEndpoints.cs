@@ -1,6 +1,7 @@
 using AppointmentSystem.Application.DTOs;
 using AppointmentSystem.Application.Services;
 using AppointmentSystem.Application.Validators;
+using AppointmentSystem.Domain.Entities;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
@@ -74,14 +75,35 @@ namespace AppointmentSystem.Api.Endpoints
 
         private static void MapAppointmentRoutes(RouteGroupBuilder apiGroup)
         {
-            // Spesifik route'lar önce (approve, reject, audits, pending)
+            // ÖNEMLİ: Spesifik route'lar önce tanımlanmalı (route çakışmasını önlemek için)
+            // /appointments/{id}/status endpoint'i /appointments/{id} GET'den ÖNCE olmalı
+            
+            // Spesifik route'lar önce (approve, reject, status, audits, pending)
             apiGroup.MapPost("/appointments/{id}/approve", async (
                 int id,
                 [FromBody] ApproveRequest request,
                 IAppointmentService appointmentService) =>
             {
-                await appointmentService.ApproveAppointmentAsync(id, request.AdminUser);
-                return Results.Ok(new { message = "Randevu onaylandı" });
+                try
+                {
+                    // Check if appointment exists
+                    var appointment = await appointmentService.GetAppointmentByIdAsync(id);
+                    if (appointment == null)
+                    {
+                        return Results.NotFound(new { error = $"Appointment with id {id} not found." });
+                    }
+
+                    await appointmentService.ApproveAppointmentAsync(id, request.AdminUser);
+                    return Results.Ok(new { message = "Randevu onaylandı" });
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return Results.BadRequest(new { error = ex.Message });
+                }
+                catch (ArgumentException ex)
+                {
+                    return Results.BadRequest(new { error = ex.Message });
+                }
             }).WithName("ApproveAppointment");
 
             apiGroup.MapPost("/appointments/{id}/reject", async (
@@ -94,9 +116,58 @@ namespace AppointmentSystem.Api.Endpoints
                     return Results.BadRequest(new { error = "Red nedeni zorunludur" });
                 }
 
-                await appointmentService.RejectAppointmentAsync(id, request.AdminUser, request.Comment);
-                return Results.Ok(new { message = "Randevu reddedildi" });
+                try
+                {
+                    // Check if appointment exists
+                    var appointment = await appointmentService.GetAppointmentByIdAsync(id);
+                    if (appointment == null)
+                    {
+                        return Results.NotFound(new { error = $"Appointment with id {id} not found." });
+                    }
+
+                    await appointmentService.RejectAppointmentAsync(id, request.AdminUser, request.Comment);
+                    return Results.Ok(new { message = "Randevu reddedildi" });
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return Results.BadRequest(new { error = ex.Message });
+                }
+                catch (ArgumentException ex)
+                {
+                    return Results.BadRequest(new { error = ex.Message });
+                }
             }).WithName("RejectAppointment");
+
+            // Status update endpoint - /appointments/{id}/status
+            // ÖNEMLİ: Bu endpoint /appointments/{id} GET endpoint'inden ÖNCE tanımlanmalı
+            apiGroup.MapPost("/appointments/{id}/status", async (
+                int id,
+                [FromBody] UpdateStatusRequest request,
+                IAppointmentService appointmentService) =>
+            {
+                try
+                {
+                    // Check if appointment exists
+                    var appointment = await appointmentService.GetAppointmentByIdAsync(id);
+                    if (appointment == null)
+                    {
+                        return Results.NotFound(new { error = $"Appointment with id {id} not found." });
+                    }
+
+                    await appointmentService.UpdateStatusAsync(id, request.ToStatus, request.ActionBy, request.Comment);
+                    return Results.Ok(new { message = "Randevu durumu güncellendi" });
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return Results.BadRequest(new { error = ex.Message });
+                }
+                catch (ArgumentException ex)
+                {
+                    return Results.BadRequest(new { error = ex.Message });
+                }
+            })
+            .WithName("UpdateAppointmentStatus")
+            .WithTags("Appointments");
 
             apiGroup.MapGet("/appointments/{id}/audits", async (
                 int id,
@@ -114,7 +185,7 @@ namespace AppointmentSystem.Api.Endpoints
                 return Results.Ok(result);
             }).WithName("GetPendingAppointments");
 
-            // Genel route'lar
+            // Genel route'lar - EN SON tanımlanmalı (route çakışmasını önlemek için)
             apiGroup.MapGet("/appointments", async (
                 [AsParameters] AppointmentFilterDto filter,
                 IAppointmentService appointmentService) =>
@@ -123,6 +194,7 @@ namespace AppointmentSystem.Api.Endpoints
                 return Results.Ok(result);
             }).WithName("GetAppointments");
 
+            // /appointments/{id} GET endpoint'i EN SONA alındı (route çakışmasını önlemek için)
             apiGroup.MapGet("/appointments/{id}", async (
                 int id,
                 IAppointmentService appointmentService) =>
@@ -197,5 +269,6 @@ namespace AppointmentSystem.Api.Endpoints
     // Request DTOs
     public record ApproveRequest(string AdminUser);
     public record RejectRequest(string AdminUser, string Comment);
+    public record UpdateStatusRequest(AppointmentStatus ToStatus, string ActionBy, string? Comment = null);
 }
 

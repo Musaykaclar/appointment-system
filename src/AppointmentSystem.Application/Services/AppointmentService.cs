@@ -131,43 +131,54 @@ namespace AppointmentSystem.Application.Services
             }
         }
 
-        public async Task ApproveAppointmentAsync(int id, string adminUser)
+        public async Task UpdateStatusAsync(int id, AppointmentStatus toStatus, string actionBy, string? comment = null)
         {
             var appointment = await _context.Appointments.FindAsync(id);
-            if (appointment != null && appointment.Status == AppointmentStatus.Pending)
+            if (appointment == null)
             {
-                var oldStatus = appointment.Status;
-                appointment.Status = AppointmentStatus.Approved;
-                appointment.UpdatedAt = DateTime.UtcNow;
-
-                AddAuditRecord(id, oldStatus, AppointmentStatus.Approved, adminUser, AppointmentConstants.AuditCommentApproved);
-
-                await _context.SaveChangesAsync();
+                throw new InvalidOperationException($"Appointment with id {id} not found.");
             }
+
+            var fromStatus = appointment.Status;
+
+            // Validate status transition
+            if (!IsValidStatusTransition(fromStatus, toStatus))
+            {
+                throw new InvalidOperationException(
+                    $"Invalid status transition from {fromStatus} to {toStatus}. " +
+                    $"Allowed transitions: Draft→Pending, Draft→Approved, Draft→Rejected, Pending→Approved, Pending→Rejected");
+            }
+
+            // Update appointment status
+            appointment.Status = toStatus;
+            appointment.UpdatedAt = DateTime.UtcNow;
+
+            // Set AdminComment only if rejected
+            if (toStatus == AppointmentStatus.Rejected && !string.IsNullOrWhiteSpace(comment))
+            {
+                appointment.AdminComment = comment;
+            }
+
+            // Create audit record
+            var auditComment = comment ?? GetDefaultAuditComment(fromStatus, toStatus);
+            AddAuditRecord(id, fromStatus, toStatus, actionBy, auditComment);
+
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task ApproveAppointmentAsync(int id, string adminUser)
+        {
+            await UpdateStatusAsync(id, AppointmentStatus.Approved, adminUser);
         }
 
         public async Task RejectAppointmentAsync(int id, string adminUser, string comment)
         {
-            var appointment = await _context.Appointments.FindAsync(id);
-            if (appointment != null && appointment.Status == AppointmentStatus.Pending)
+            if (string.IsNullOrWhiteSpace(comment))
             {
-                var oldStatus = appointment.Status;
-                appointment.Status = AppointmentStatus.Rejected;
-                appointment.AdminComment = comment;
-                appointment.UpdatedAt = DateTime.UtcNow;
-
-                _context.AppointmentAudits.Add(new AppointmentAudit
-                {
-                    AppointmentId = id,
-                    FromStatus = oldStatus,
-                    ToStatus = AppointmentStatus.Rejected,
-                    ActionBy = adminUser,
-                    ActionAt = DateTime.UtcNow,
-                    Comment = comment
-                });
-
-                await _context.SaveChangesAsync();
+                throw new ArgumentException("Comment is required when rejecting an appointment.", nameof(comment));
             }
+
+            await UpdateStatusAsync(id, AppointmentStatus.Rejected, adminUser, comment);
         }
 
         // Private helper methods
@@ -269,6 +280,36 @@ namespace AppointmentSystem.Application.Services
                 Description = appointment.Description,
                 Status = appointment.Status,
                 AdminComment = appointment.AdminComment
+            };
+        }
+
+        private bool IsValidStatusTransition(AppointmentStatus fromStatus, AppointmentStatus toStatus)
+        {
+            // Same status is not a valid transition
+            if (fromStatus == toStatus)
+            {
+                return false;
+            }
+
+            return (fromStatus, toStatus) switch
+            {
+                (AppointmentStatus.Draft, AppointmentStatus.Pending) => true,
+                (AppointmentStatus.Draft, AppointmentStatus.Approved) => true,
+                (AppointmentStatus.Draft, AppointmentStatus.Rejected) => true,
+                (AppointmentStatus.Pending, AppointmentStatus.Approved) => true,
+                (AppointmentStatus.Pending, AppointmentStatus.Rejected) => true,
+                _ => false
+            };
+        }
+
+        private string GetDefaultAuditComment(AppointmentStatus fromStatus, AppointmentStatus toStatus)
+        {
+            return toStatus switch
+            {
+                AppointmentStatus.Pending => AppointmentConstants.AuditCommentCreated,
+                AppointmentStatus.Approved => AppointmentConstants.AuditCommentApproved,
+                AppointmentStatus.Rejected => "Randevu reddedildi",
+                _ => $"Durum {fromStatus} → {toStatus} olarak değiştirildi"
             };
         }
 

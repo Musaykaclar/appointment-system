@@ -11,6 +11,7 @@ namespace AppointmentSystem.Application.Services
         Task<List<AppointmentAuditDto>> GetAppointmentAuditsAsync(int appointmentId);
         Task CreateAppointmentAsync(AppointmentDto dto, int? userId = null);
         Task UpdateAppointmentAsync(AppointmentDto dto);
+        Task UpdateStatusAsync(int id, AppointmentStatus toStatus, string actionBy, string? comment = null);
         Task ApproveAppointmentAsync(int id, string adminUser);
         Task RejectAppointmentAsync(int id, string adminUser, string comment);
     }

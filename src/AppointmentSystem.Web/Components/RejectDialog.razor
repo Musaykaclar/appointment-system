@@ -18,8 +18,9 @@
                      RequiredError="Red nedeni zorunludur" />
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">İptal</MudButton>
-        <MudButton Color="Color.Error" 
+        <MudButton ButtonType="ButtonType.Button" OnClick="Cancel">İptal</MudButton>
+        <MudButton ButtonType="ButtonType.Button" 
+                  Color="Color.Error" 
                   Variant="Variant.Filled" 
                   OnClick="Submit"
                   Disabled="@string.IsNullOrWhiteSpace(RejectComment)">
@@ -37,18 +38,15 @@
 
     private void Submit()
     {
-        if (!string.IsNullOrWhiteSpace(RejectComment) && MudDialog != null)
+        if (!string.IsNullOrWhiteSpace(RejectComment))
         {
-            MudDialog.Close(DialogResult.Ok(RejectComment));
+            MudDialog?.Close(DialogResult.Ok(RejectComment));
         }
     }
 
     private void Cancel() 
     {
-        if (MudDialog != null)
-        {
-            MudDialog.Close(DialogResult.Cancel());
-        }
+        MudDialog?.Close(DialogResult.Cancel());
     }
 }
 

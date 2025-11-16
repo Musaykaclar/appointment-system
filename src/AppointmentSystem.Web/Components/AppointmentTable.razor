@@ -1,0 +1,150 @@
+@using AppointmentSystem.Application.DTOs
+@using AppointmentSystem.Domain.Entities
+@using AppointmentSystem.Web.Helpers
+@using MudBlazor
+
+<MudTable Items="@Appointments" 
+          Hover="true" 
+          Bordered="true" 
+          Striped="true" 
+          Dense="false" 
+          Loading="@IsLoading"
+          Elevation="1">
+    <HeaderContent>
+        <MudTh>Talep No</MudTh>
+        <MudTh>Başlık</MudTh>
+        @if (ShowRequestedBy)
+        {
+            <MudTh>Talep Eden</MudTh>
+        }
+        @if (ShowDateBeforeBranch)
+        {
+            <MudTh>Tarih</MudTh>
+            <MudTh>Saat</MudTh>
+        }
+        <MudTh>Şube</MudTh>
+        @if (!ShowDateBeforeBranch)
+        {
+            <MudTh>Tarih</MudTh>
+            <MudTh>Saat</MudTh>
+        }
+        <MudTh>Durum</MudTh>
+        @if (ShowDescription)
+        {
+            <MudTh>Açıklama</MudTh>
+        }
+        <MudTh>İşlemler</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd><strong>#@context.Id</strong></MudTd>
+        <MudTd>@context.Title</MudTd>
+        @if (ShowRequestedBy)
+        {
+            <MudTd>
+                @if (ShowRequestedByAsChip)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Text">
+                        @context.RequestedBy
+                    </MudChip>
+                }
+                else
+                {
+                    <text>@context.RequestedBy</text>
+                }
+            </MudTd>
+        }
+        @if (ShowDateBeforeBranch)
+        {
+            <MudTd>@context.Date.ToString("dd.MM.yyyy")</MudTd>
+            <MudTd>@context.StartTime.ToString(@"hh\:mm") - @context.EndTime.ToString(@"hh\:mm")</MudTd>
+        }
+        <MudTd>@context.BranchName</MudTd>
+        @if (!ShowDateBeforeBranch)
+        {
+            <MudTd>@context.Date.ToString("dd.MM.yyyy")</MudTd>
+            <MudTd>@context.StartTime.ToString(@"hh\:mm") - @context.EndTime.ToString(@"hh\:mm")</MudTd>
+        }
+        <MudTd>
+            <MudChip T="string" 
+                     Color="@AppointmentStatusHelper.GetStatusColor(context.Status)" 
+                     Size="Size.Small"
+                     Variant="Variant.Filled">
+                @AppointmentStatusHelper.GetStatusText(context.Status)
+            </MudChip>
+        </MudTd>
+        @if (ShowDescription)
+        {
+            <MudTd>
+                <MudText Typo="Typo.body2" 
+                         Style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                         title="@context.Description">
+                    @(string.IsNullOrEmpty(context.Description) ? "-" : context.Description)
+                </MudText>
+            </MudTd>
+        }
+        <MudTd>
+            <div class="d-flex align-items-center">
+                @if (ShowApproveRejectButtons && (context.Status == AppointmentStatus.Draft || context.Status == AppointmentStatus.Pending))
+                {
+                    <MudButton Color="Color.Success" 
+                               Size="Size.Small" 
+                               Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Check" 
+                               OnClick="@(async () => { if (OnApprove != null) await OnApprove(context); })" 
+                               Disabled="@IsLoading"
+                               Class="me-2">
+                        Onayla
+                    </MudButton>
+                    <MudButton Color="Color.Error" 
+                               Size="Size.Small" 
+                               Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Filled.Close" 
+                               OnClick="@(async () => { if (OnReject != null) await OnReject(context); })"
+                               Disabled="@IsLoading"
+                               Class="me-2">
+                        Reddet
+                    </MudButton>
+                }
+                <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
+                               Color="Color.Primary" 
+                               Size="Size.Small" 
+                               OnClick="@(async () => { if (OnShowDetails != null) await OnShowDetails(context); })" 
+                               Disabled="@IsLoading"
+                               title="Detayları Görüntüle"/>
+            </div>
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager t="AppointmentDto" 
+                       PageSizeOptions="new int[] { 10, 25, 50 }"
+                       InfoFormat="{first_item}-{last_item} / {all_items}"
+                       pageSizeChanged="OnPageSizeChanged"
+                       pageChanged="OnPageChanged"
+                       pageSize="@PageSize"
+                       currentPage="@CurrentPage"
+                       totalItems="@TotalCount" />
+    </PagerContent>
+</MudTable>
+
+@code {
+    [Parameter, EditorRequired] public IEnumerable<AppointmentDto> Appointments { get; set; } = default!;
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public int PageSize { get; set; }
+    [Parameter] public int CurrentPage { get; set; }
+    [Parameter] public int TotalCount { get; set; }
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+    [Parameter] public EventCallback<int> OnPageSizeChanged { get; set; }
+    
+    // Display options
+    [Parameter] public bool ShowRequestedBy { get; set; } = true;
+    [Parameter] public bool ShowRequestedByAsChip { get; set; } = false;
+    [Parameter] public bool ShowDescription { get; set; } = false;
+    [Parameter] public bool ShowDateBeforeBranch { get; set; } = false;
+    [Parameter] public bool ShowApproveRejectButtons { get; set; } = false;
+    
+    // Actions
+    [Parameter] public Func<AppointmentDto, Task>? OnApprove { get; set; }
+    [Parameter] public Func<AppointmentDto, Task>? OnReject { get; set; }
+    [Parameter] public Func<AppointmentDto, Task>? OnShowDetails { get; set; }
+}
+

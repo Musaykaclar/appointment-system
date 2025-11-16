@@ -1,0 +1,156 @@
+@using AppointmentSystem.Application.DTOs
+@using AppointmentSystem.Domain.Entities
+@using MudBlazor
+
+<MudPaper Elevation="0" Class="pa-3 mb-4" Style="background-color: #f5f5f5;">
+    <MudGrid Spacing="3">
+        <MudItem xs="12" md="3">
+            @if (UseStringStatusFilter)
+            {
+                <MudSelect T="string" 
+                           Value="@GetStatusFilterValue()"
+                           ValueChanged="@(async (string value) => { SetStatusFilterValue(value); await OnFilterChanged.InvokeAsync(); })"
+                           Label="Durum" 
+                           Variant="Variant.Outlined"
+                           Clearable="true"
+                           FullWidth="true">
+                    <MudSelectItem T="string" Value="@("")">Tümü</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Pending")">Beklemede</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Approved")">Onaylandı</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("Rejected")">Reddedildi</MudSelectItem>
+                </MudSelect>
+            }
+            else
+            {
+                <MudSelect T="AppointmentStatus?" 
+                           Value="@Filter.Status"
+                           ValueChanged="@(async (AppointmentStatus? value) => { Filter.Status = value; await OnFilterChanged.InvokeAsync(); })"
+                           Label="Durum" 
+                           Variant="Variant.Outlined"
+                           Clearable="true"
+                           FullWidth="true">
+                    <MudSelectItem Value="@((AppointmentStatus?)null)">Tümü</MudSelectItem>
+                    <MudSelectItem Value="@AppointmentStatus.Pending">Beklemede</MudSelectItem>
+                    <MudSelectItem Value="@AppointmentStatus.Approved">Onaylandı</MudSelectItem>
+                    <MudSelectItem Value="@AppointmentStatus.Rejected">Reddedildi</MudSelectItem>
+                </MudSelect>
+            }
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudSelect T="int?" 
+                       Value="@Filter.BranchId"
+                       ValueChanged="@(async (int? value) => { Filter.BranchId = value; await OnFilterChanged.InvokeAsync(); })"
+                       Label="Şube" 
+                       Variant="Variant.Outlined"
+                       Clearable="true"
+                       FullWidth="true">
+                <MudSelectItem T="int?" Value="@((int?)null)">Tümü</MudSelectItem>
+                @foreach (var branch in Branches)
+                {
+                    <MudSelectItem T="int?" Value="@branch.Id">@branch.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudDatePicker Date="@Filter.StartDate"
+                           DateChanged="@(async (DateTime? value) => { Filter.StartDate = value; await OnFilterChanged.InvokeAsync(); })"
+                           Label="Başlangıç Tarihi" 
+                           Variant="Variant.Outlined" 
+                           Clearable="true"/>
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudDatePicker Date="@Filter.EndDate"
+                           DateChanged="@(async (DateTime? value) => { Filter.EndDate = value; await OnFilterChanged.InvokeAsync(); })"
+                           Label="Bitiş Tarihi" 
+                           Variant="Variant.Outlined" 
+                           Clearable="true"/>
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudTextField Value="@Filter.SearchText"
+                          ValueChanged="@((string value) => { Filter.SearchText = value; })"
+                          Label="Ara (Başlık/Kullanıcı)" 
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start" 
+                          AdornmentIcon="@Icons.Material.Filled.Search" 
+                          Immediate="true"
+                          OnKeyDown="@(async (KeyboardEventArgs e) => { if (e.Key == "Enter") await OnFilterChanged.InvokeAsync(); })"
+                          FullWidth="true"/>
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudSelect T="string" 
+                       Value="@Filter.SortBy"
+                       ValueChanged="@(async (string value) => { Filter.SortBy = value; await OnFilterChanged.InvokeAsync(); })"
+                       Label="Sırala" 
+                       Variant="Variant.Outlined"
+                       Clearable="true"
+                       FullWidth="true">
+                <MudSelectItem T="string" Value="@("Date")">Tarihe Göre</MudSelectItem>
+                @if (ShowStatusSort)
+                {
+                    <MudSelectItem T="string" Value="@("Status")">Duruma Göre</MudSelectItem>
+                }
+                else
+                {
+                    <MudSelectItem T="string" Value="@("RequestedBy")">Kullanıcıya Göre</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="3">
+            <MudSelect T="bool?" 
+                       Value="@Filter.SortDescending"
+                       ValueChanged="@(async (bool? value) => { Filter.SortDescending = value; await OnFilterChanged.InvokeAsync(); })"
+                       Label="Sıralama Yönü" 
+                       Variant="Variant.Outlined"
+                       FullWidth="true">
+                <MudSelectItem Value="@((bool?)false)">Artan</MudSelectItem>
+                <MudSelectItem Value="@((bool?)true)">Azalan</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="@(ShowStatusSort ? 6 : 3)" class="d-flex align-items-end">
+            <MudButton Color="Color.Primary" 
+                       OnClick="@(async () => await OnFilterChanged.InvokeAsync())" 
+                       Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.FilterList"
+                       Class="me-2">
+                Filtrele
+            </MudButton>
+            <MudButton Color="Color.Default" 
+                       OnClick="@(async () => await OnClearFilters.InvokeAsync())"
+                       Variant="Variant.Outlined"
+                       StartIcon="@Icons.Material.Filled.Clear">
+                Temizle
+            </MudButton>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+@code {
+    [Parameter, EditorRequired] public AppointmentFilterDto Filter { get; set; } = default!;
+    [Parameter, EditorRequired] public List<BranchDto> Branches { get; set; } = default!;
+    [Parameter] public bool UseStringStatusFilter { get; set; } = false;
+    [Parameter] public bool ShowStatusSort { get; set; } = false;
+    [Parameter] public EventCallback OnFilterChanged { get; set; }
+    [Parameter] public EventCallback OnClearFilters { get; set; }
+
+    private string GetStatusFilterValue()
+    {
+        return Filter.Status?.ToString() ?? "";
+    }
+
+    private void SetStatusFilterValue(string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            Filter.Status = null;
+        }
+        else if (Enum.TryParse<AppointmentStatus>(value, out var status))
+        {
+            Filter.Status = status;
+        }
+        else
+        {
+            Filter.Status = null;
+        }
+    }
+}
+

@@ -4,8 +4,6 @@
 @using AppointmentSystem.Domain.Entities
 @using AppointmentSystem.Web.Services
 @using MudBlazor
-@using MudBlazor.Services
-@using Microsoft.AspNetCore.Components.Forms
 @inject IAppointmentService AppointmentService
 @inject IBranchService BranchService
 @inject ISnackbar Snackbar
@@ -16,169 +14,43 @@
 <PageTitle>Randevu Listesi</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge">
-
     <MudPaper Elevation="2" Class="pa-4 rounded-lg">
-
         <div class="d-flex justify-content-between align-items-center mb-4">
             <MudText Typo="Typo.h5" GutterBottom="false">Randevularım</MudText>
-            <MudButton Color="Color.Primary" 
-                       Variant="Variant.Filled" 
-                       StartIcon="@Icons.Material.Filled.Add"
-                       Href="/appointment-form">
-                Yeni Randevu
-            </MudButton>
+            <div class="d-flex align-items-center">
+                <MudButton Color="Color.Default" 
+                           Variant="Variant.Outlined" 
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="RefreshAppointments"
+                           Disabled="@IsLoading"
+                           Class="me-2"
+                           title="Yenile">
+                    Yenile
+                </MudButton>
+                <MudButton Color="Color.Primary" 
+                           Variant="Variant.Filled" 
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Href="/appointment-form">
+                    Yeni Randevu
+                </MudButton>
+            </div>
         </div>
 
-        <!-- FILTERS -->
-        <MudPaper Elevation="0" Class="pa-3 mb-4" Style="background-color: #f5f5f5;">
-            <MudGrid Spacing="3">
-                <MudItem xs="12" md="3">
-                    <MudSelect T="AppointmentStatus?" 
-                               Value="@Filter.Status"
-                               ValueChanged="@(async (AppointmentStatus? value) => { Filter.Status = value; await ApplyFilters(); })"
-                               Label="Durum" 
-                               Variant="Variant.Outlined"
-                               Clearable="true"
-                               FullWidth="true">
-                        <MudSelectItem Value="@((AppointmentStatus?)null)">Tümü</MudSelectItem>
-                        <MudSelectItem Value="@AppointmentStatus.Pending">Beklemede</MudSelectItem>
-                        <MudSelectItem Value="@AppointmentStatus.Approved">Onaylandı</MudSelectItem>
-                        <MudSelectItem Value="@AppointmentStatus.Rejected">Reddedildi</MudSelectItem>
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudSelect T="int?" 
-                               Value="@Filter.BranchId"
-                               ValueChanged="@(async (int? value) => { Filter.BranchId = value; await ApplyFilters(); })"
-                               Label="Şube" 
-                               Variant="Variant.Outlined"
-                               Clearable="true"
-                               FullWidth="true">
-                        <MudSelectItem T="int?" Value="@((int?)null)">Tümü</MudSelectItem>
-                        @foreach (var branch in Branches)
-                        {
-                            <MudSelectItem T="int?" Value="@branch.Id">@branch.Name</MudSelectItem>
-                        }
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudDatePicker Date="@Filter.StartDate"
-                                   DateChanged="@(async (DateTime? value) => { Filter.StartDate = value; await ApplyFilters(); })"
-                                   Label="Başlangıç Tarihi" 
-                                   Variant="Variant.Outlined" 
-                                   Clearable="true"/>
-                </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudDatePicker Date="@Filter.EndDate"
-                                   DateChanged="@(async (DateTime? value) => { Filter.EndDate = value; await ApplyFilters(); })"
-                                   Label="Bitiş Tarihi" 
-                                   Variant="Variant.Outlined" 
-                                   Clearable="true"/>
-                </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudTextField Value="@Filter.SearchText"
-                                  ValueChanged="@((string value) => { Filter.SearchText = value; })"
-                                  Label="Ara (Başlık/Kullanıcı)" 
-                                  Variant="Variant.Outlined"
-                                  Adornment="Adornment.Start" 
-                                  AdornmentIcon="@Icons.Material.Filled.Search" 
-                                  Immediate="true"
-                                  OnKeyDown="@(async (KeyboardEventArgs e) => { if (e.Key == "Enter") await ApplyFilters(); })"
-                                  FullWidth="true"/>
-                </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudSelect T="string" 
-                               Value="@Filter.SortBy"
-                               ValueChanged="@(async (string value) => { Filter.SortBy = value; await ApplyFilters(); })"
-                               Label="Sırala" 
-                               Variant="Variant.Outlined"
-                               Clearable="true"
-                               FullWidth="true">
-                        <MudSelectItem T="string" Value="@("Date")">Tarihe Göre</MudSelectItem>
-                        <MudSelectItem T="string" Value="@("Status")">Duruma Göre</MudSelectItem>
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" md="3">
-                    <MudSelect T="bool?" 
-                               Value="@Filter.SortDescending"
-                               ValueChanged="@(async (bool? value) => { Filter.SortDescending = value; await ApplyFilters(); })"
-                               Label="Sıralama Yönü" 
-                               Variant="Variant.Outlined"
-                               FullWidth="true">
-                        <MudSelectItem Value="@((bool?)false)">Artan</MudSelectItem>
-                        <MudSelectItem Value="@((bool?)true)">Azalan</MudSelectItem>
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" md="6" class="d-flex align-items-end">
-                    <MudButton Color="Color.Primary" 
-                               OnClick="ApplyFilters" 
-                               Variant="Variant.Filled"
-                               StartIcon="@Icons.Material.Filled.FilterList"
-                               Class="me-2">
-                        Filtrele
-                    </MudButton>
-                    <MudButton Color="Color.Default" 
-                               OnClick="ClearFilters"
-                               Variant="Variant.Outlined"
-                               StartIcon="@Icons.Material.Filled.Clear">
-                        Temizle
-                    </MudButton>
-                </MudItem>
-            </MudGrid>
-        </MudPaper>
+        <AppointmentFilterPanel Filter="@Filter" 
+                                Branches="@Branches" 
+                                ShowStatusSort="true"
+                                OnFilterChanged="ApplyFilters"
+                                OnClearFilters="ClearFilters" />
 
-        <!-- TABLE -->
-        <MudTable Items="@PagedResult.Items" 
-                  Hover="true" 
-                  Bordered="true" 
-                  Striped="true" 
-                  Dense="false" 
-                  Loading="@IsLoading"
-                  Elevation="1">
-            <HeaderContent>
-                <MudTh>Talep No</MudTh>
-                <MudTh>Başlık</MudTh>
-                <MudTh>Talep Eden</MudTh>
-                <MudTh>Şube</MudTh>
-                <MudTh>Tarih</MudTh>
-                <MudTh>Saat</MudTh>
-                <MudTh>Durum</MudTh>
-                <MudTh>İşlemler</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd><strong>#@context.Id</strong></MudTd>
-                <MudTd>@context.Title</MudTd>
-                <MudTd>@context.RequestedBy</MudTd>
-                <MudTd>@context.BranchName</MudTd>
-                <MudTd>@context.Date.ToString("dd.MM.yyyy")</MudTd>
-                <MudTd>@context.StartTime.ToString(@"hh\:mm") - @context.EndTime.ToString(@"hh\:mm")</MudTd>
-                <MudTd>
-                    <MudChip T="string" 
-                             Color="@GetStatusColor(context.Status)" 
-                             Size="Size.Small"
-                             Variant="Variant.Filled">
-                        @GetStatusText(context.Status)
-                    </MudChip>
-                </MudTd>
-                <MudTd>
-                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
-                                   Color="Color.Primary" 
-                                   Size="Size.Small"
-                                   OnClick="() => ShowDetails(context)" 
-                                   title="Detayları Görüntüle" />
-                </MudTd>
-            </RowTemplate>
-            <PagerContent>
-                <MudTablePager t="AppointmentDto" 
-                               PageSizeOptions="new int[] { 10, 25, 50 }"
-                               InfoFormat="{first_item}-{last_item} / {all_items}"
-                               pageSizeChanged="OnPageSizeChanged"
-                               pageChanged="OnPageChanged"
-                               pageSize="@Filter.PageSize"
-                               currentPage="@Filter.PageNumber"
-                               totalItems="@PagedResult.TotalCount" />
-            </PagerContent>
-        </MudTable>
+        <AppointmentTable Appointments="@PagedResult.Items"
+                          IsLoading="@IsLoading"
+                          PageSize="@(Filter.PageSize ?? 10)"
+                          CurrentPage="@(Filter.PageNumber ?? 1)"
+                          TotalCount="@PagedResult.TotalCount"
+                          OnPageChanged="@(async (int page) => await OnPageChanged(page))"
+                          OnPageSizeChanged="@(async (int pageSize) => await OnPageSizeChanged(pageSize))"
+                          ShowRequestedBy="true"
+                          OnShowDetails="@(async (appointment) => await ShowDetails(appointment))" />
 
         @if (!PagedResult.Items.Any() && !IsLoading)
         {
@@ -282,29 +154,6 @@
         await LoadAppointments();
     }
 
-    private Color GetStatusColor(AppointmentStatus status)
-    {
-        return status switch
-        {
-            AppointmentStatus.Draft => Color.Default,
-            AppointmentStatus.Pending => Color.Warning,
-            AppointmentStatus.Approved => Color.Success,
-            AppointmentStatus.Rejected => Color.Error,
-            _ => Color.Default
-        };
-    }
-
-    private string GetStatusText(AppointmentStatus status)
-    {
-        return status switch
-        {
-            AppointmentStatus.Draft => "Taslak",
-            AppointmentStatus.Pending => "Beklemede",
-            AppointmentStatus.Approved => "Onaylandı",
-            AppointmentStatus.Rejected => "Reddedildi",
-            _ => status.ToString()
-        };
-    }
 
     private async Task ShowDetails(AppointmentDto appointment)
     {
@@ -320,6 +169,19 @@
             CloseButton = true
         };
 
-        await DialogService.ShowAsync<AppointmentDetailDialog>("Randevu Detayları", parameters, options);
+        var dialog = await DialogService.ShowAsync<AppointmentDetailDialog>("Randevu Detayları", parameters, options);
+        var result = await dialog.Result;
+        
+        // Dialog kapandıktan sonra listeyi yenile (durum değişiklikleri için)
+        if (result != null && !result.Canceled)
+        {
+            await RefreshAppointments();
+        }
+    }
+
+    private async Task RefreshAppointments()
+    {
+        await LoadAppointments();
+        Snackbar.Add("Randevu listesi yenilendi", Severity.Info);
     }
 }
