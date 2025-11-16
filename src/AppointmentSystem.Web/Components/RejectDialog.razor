@@ -1,6 +1,8 @@
 @using MudBlazor
 @using AppointmentSystem.Application.DTOs
 @using Microsoft.AspNetCore.Components
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
 
 <MudDialog>
     <TitleContent>
@@ -22,7 +24,7 @@
         <MudButton ButtonType="ButtonType.Button" 
                   Color="Color.Error" 
                   Variant="Variant.Filled" 
-                  OnClick="Submit"
+                  OnClick="@(async () => await HandleRejectClick())"
                   Disabled="@string.IsNullOrWhiteSpace(RejectComment)">
             Reddet
         </MudButton>
@@ -36,11 +38,69 @@
 
     private string RejectComment { get; set; } = string.Empty;
 
-    private void Submit()
+    private async Task HandleRejectClick()
     {
-        if (!string.IsNullOrWhiteSpace(RejectComment))
+        // Önce console log yaz
+        var appointmentInfo = Appointment != null 
+            ? $"Randevu ID: {Appointment.Id}, Başlık: {Appointment.Title}" 
+            : "Randevu bilgisi yok";
+        
+        var logMessage = $"[REJECT DIALOG BUTTON] Reddet butonuna basıldı - {appointmentInfo}, Red Nedeni: {RejectComment}";
+        
+        try
         {
-            MudDialog?.Close(DialogResult.Ok(RejectComment));
+            await JSRuntime.InvokeVoidAsync("console.log", logMessage);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Console log hatası: {ex.Message}");
+        }
+        
+        // Sonra Submit metodunu çağır
+        await Submit();
+    }
+
+    private async Task Submit()
+    {
+        if (string.IsNullOrWhiteSpace(RejectComment))
+        {
+            await JSRuntime.InvokeVoidAsync("console.log", "[REJECT DIALOG] Submit başarısız - Comment empty");
+            return;
+        }
+
+        // Console log ekle
+        var appointmentInfo = Appointment != null 
+            ? $"Randevu ID: {Appointment.Id}, Başlık: {Appointment.Title}" 
+            : "Randevu bilgisi yok";
+        
+        var logMessage = $"[REJECT DIALOG] Submit metodu çağrıldı - {appointmentInfo}, Red Nedeni: {RejectComment}";
+        
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("console.log", logMessage);
+        }
+        catch
+        {
+            // Hata durumunda sessizce devam et
+        }
+        
+        // Dialog'u kapat
+        if (MudDialog != null)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("console.log", "[REJECT DIALOG] MudDialog.Close çağrılıyor...");
+                MudDialog.Close(DialogResult.Ok(RejectComment));
+                await JSRuntime.InvokeVoidAsync("console.log", "[REJECT DIALOG] MudDialog.Close çağrıldı");
+            }
+            catch (Exception ex)
+            {
+                await JSRuntime.InvokeVoidAsync("console.log", $"[REJECT DIALOG] MudDialog.Close hatası: {ex.Message}");
+            }
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("console.log", "[REJECT DIALOG] MudDialog null!");
         }
     }
 

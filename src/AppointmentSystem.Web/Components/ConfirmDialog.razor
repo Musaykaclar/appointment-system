@@ -1,5 +1,7 @@
 @using MudBlazor
 @using Microsoft.AspNetCore.Components
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
 
 <MudDialog>
     <TitleContent>
@@ -10,7 +12,7 @@
     </DialogContent>
     <DialogActions>
         <MudButton ButtonType="ButtonType.Button" OnClick="Cancel">@CancelText</MudButton>
-        <MudButton ButtonType="ButtonType.Button" Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">@ConfirmText</MudButton>
+        <MudButton ButtonType="ButtonType.Button" Color="Color.Primary" Variant="Variant.Filled" OnClick="@(async () => await Submit())">@ConfirmText</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -22,9 +24,53 @@
     [Parameter] public string ConfirmText { get; set; } = "Onayla";
     [Parameter] public string CancelText { get; set; } = "İptal";
 
-    private void Submit() 
+    private async Task Submit() 
     {
-        MudDialog?.Close(DialogResult.Ok(true));
+        // Console log ekle
+        try
+        {
+            if (JSRuntime != null)
+            {
+                await JSRuntime.InvokeVoidAsync("console.log", $"[CONFIRM DIALOG] Onayla butonuna basıldı - Mesaj: {Message}");
+            }
+        }
+        catch
+        {
+            // Console log başarısız olsa bile devam et
+        }
+        
+        // Dialog'u kapat
+        if (MudDialog != null)
+        {
+            try
+            {
+                if (JSRuntime != null)
+                {
+                    await JSRuntime.InvokeVoidAsync("console.log", "[CONFIRM DIALOG] MudDialog.Close çağrılıyor...");
+                }
+                
+                MudDialog.Close(DialogResult.Ok(true));
+                
+                if (JSRuntime != null)
+                {
+                    await JSRuntime.InvokeVoidAsync("console.log", "[CONFIRM DIALOG] MudDialog.Close çağrıldı - DialogResult.Ok(true)");
+                }
+            }
+            catch (Exception ex)
+            {
+                if (JSRuntime != null)
+                {
+                    await JSRuntime.InvokeVoidAsync("console.log", $"[CONFIRM DIALOG] MudDialog.Close hatası: {ex.Message}");
+                }
+            }
+        }
+        else
+        {
+            if (JSRuntime != null)
+            {
+                await JSRuntime.InvokeVoidAsync("console.log", "[CONFIRM DIALOG] MudDialog null!");
+            }
+        }
     }
     
     private void Cancel() 

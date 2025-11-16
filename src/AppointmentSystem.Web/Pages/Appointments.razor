@@ -172,11 +172,9 @@
         var dialog = await DialogService.ShowAsync<AppointmentDetailDialog>("Randevu Detayları", parameters, options);
         var result = await dialog.Result;
         
-        // Dialog kapandıktan sonra listeyi yenile (durum değişiklikleri için)
-        if (result != null && !result.Canceled)
-        {
-            await RefreshAppointments();
-        }
+        // Dialog kapandıktan sonra her zaman listeyi yenile (durum değişiklikleri için)
+        // Kullanıcı panelinde durum değişikliklerini görmek için
+        await RefreshAppointments();
     }
 
     private async Task RefreshAppointments()

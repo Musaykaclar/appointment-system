@@ -29,10 +29,10 @@
                            Variant="Variant.Outlined"
                            Clearable="true"
                            FullWidth="true">
-                    <MudSelectItem Value="@((AppointmentStatus?)null)">Tümü</MudSelectItem>
-                    <MudSelectItem Value="@AppointmentStatus.Pending">Beklemede</MudSelectItem>
-                    <MudSelectItem Value="@AppointmentStatus.Approved">Onaylandı</MudSelectItem>
-                    <MudSelectItem Value="@AppointmentStatus.Rejected">Reddedildi</MudSelectItem>
+                    <MudSelectItem T="AppointmentStatus?" Value="@((AppointmentStatus?)null)">Tümü</MudSelectItem>
+                    <MudSelectItem T="AppointmentStatus?" Value="@AppointmentStatus.Pending">Beklemede</MudSelectItem>
+                    <MudSelectItem T="AppointmentStatus?" Value="@AppointmentStatus.Approved">Onaylandı</MudSelectItem>
+                    <MudSelectItem T="AppointmentStatus?" Value="@AppointmentStatus.Rejected">Reddedildi</MudSelectItem>
                 </MudSelect>
             }
         </MudItem>

@@ -2,6 +2,8 @@
 @using AppointmentSystem.Domain.Entities
 @using AppointmentSystem.Web.Helpers
 @using MudBlazor
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
 
 <MudTable Items="@Appointments" 
           Hover="true" 
@@ -90,7 +92,7 @@
                                Size="Size.Small" 
                                Variant="Variant.Filled"
                                StartIcon="@Icons.Material.Filled.Check" 
-                               OnClick="@(async () => { if (OnApprove != null) await OnApprove(context); })" 
+                               OnClick="@(async () => await HandleApprove(context))" 
                                Disabled="@IsLoading"
                                Class="me-2">
                         Onayla
@@ -99,7 +101,7 @@
                                Size="Size.Small" 
                                Variant="Variant.Filled"
                                StartIcon="@Icons.Material.Filled.Close" 
-                               OnClick="@(async () => { if (OnReject != null) await OnReject(context); })"
+                               OnClick="@(async () => await HandleReject(context))"
                                Disabled="@IsLoading"
                                Class="me-2">
                         Reddet
@@ -146,5 +148,23 @@
     [Parameter] public Func<AppointmentDto, Task>? OnApprove { get; set; }
     [Parameter] public Func<AppointmentDto, Task>? OnReject { get; set; }
     [Parameter] public Func<AppointmentDto, Task>? OnShowDetails { get; set; }
+
+    private async Task HandleApprove(AppointmentDto appointment)
+    {
+        if (OnApprove != null && !IsLoading)
+        {
+            await JSRuntime.InvokeVoidAsync("console.log", $"[ONAYLA BUTONU] Randevu ID: {appointment.Id}, Başlık: {appointment.Title}, Durum: {appointment.Status}");
+            await OnApprove(appointment);
+        }
+    }
+
+    private async Task HandleReject(AppointmentDto appointment)
+    {
+        if (OnReject != null && !IsLoading)
+        {
+            await JSRuntime.InvokeVoidAsync("console.log", $"[REDDET BUTONU] Randevu ID: {appointment.Id}, Başlık: {appointment.Title}, Durum: {appointment.Status}");
+            await OnReject(appointment);
+        }
+    }
 }
 

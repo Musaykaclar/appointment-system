@@ -3,6 +3,7 @@ using AppointmentSystem.Application.Services;
 using AppointmentSystem.Domain.Entities;
 using AppointmentSystem.Web.Helpers;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace AppointmentSystem.Web.Services
 {
@@ -83,9 +84,35 @@ namespace AppointmentSystem.Web.Services
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                throw new HttpRequestException($"Randevu onaylama başarısız: {response.StatusCode} - {errorContent}");
+                var errorMessage = $"Randevu onaylama başarısız: {response.StatusCode}";
+                try
+                {
+                    // JSON error response'u parse etmeye çalış
+                    if (!string.IsNullOrWhiteSpace(errorContent))
+                    {
+                        var errorObj = JsonSerializer.Deserialize<JsonElement>(errorContent);
+                        if (errorObj.TryGetProperty("error", out var errorProp))
+                        {
+                            errorMessage = errorProp.GetString() ?? errorMessage;
+                        }
+                        else
+                        {
+                            errorMessage = errorContent;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Parse edilemezse raw content'i kullan
+                    if (!string.IsNullOrWhiteSpace(errorContent))
+                    {
+                        errorMessage = errorContent;
+                    }
+                }
+                throw new HttpRequestException(errorMessage);
             }
             
+            // Başarılı response'u kontrol et
             response.EnsureSuccessStatusCode();
         }
 
@@ -97,9 +124,35 @@ namespace AppointmentSystem.Web.Services
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                throw new HttpRequestException($"Randevu reddetme başarısız: {response.StatusCode} - {errorContent}");
+                var errorMessage = $"Randevu reddetme başarısız: {response.StatusCode}";
+                try
+                {
+                    // JSON error response'u parse etmeye çalış
+                    if (!string.IsNullOrWhiteSpace(errorContent))
+                    {
+                        var errorObj = JsonSerializer.Deserialize<JsonElement>(errorContent);
+                        if (errorObj.TryGetProperty("error", out var errorProp))
+                        {
+                            errorMessage = errorProp.GetString() ?? errorMessage;
+                        }
+                        else
+                        {
+                            errorMessage = errorContent;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Parse edilemezse raw content'i kullan
+                    if (!string.IsNullOrWhiteSpace(errorContent))
+                    {
+                        errorMessage = errorContent;
+                    }
+                }
+                throw new HttpRequestException(errorMessage);
             }
             
+            // Başarılı response'u kontrol et
             response.EnsureSuccessStatusCode();
         }
 
