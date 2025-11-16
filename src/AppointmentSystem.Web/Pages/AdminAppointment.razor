@@ -172,300 +172,110 @@
         await LoadAppointments();
     }
 
-    private async Task ApproveAppointment(AppointmentDto appointment)
+   private async Task ApproveAppointment(AppointmentDto appointment)
+{
+    var parameters = new DialogParameters<ConfirmDialog>
     {
-        try
-        {
-            var parameters = new DialogParameters
-            {
-                ["Message"] = $"'{appointment.Title}' başlıklı randevuyu onaylamak istediğinizden emin misiniz?",
-                ["ConfirmText"] = "Onayla",
-                ["CancelText"] = "İptal"
-            };
+        { x => x.Message, $"'{appointment.Title}' başlıklı randevuyu onaylamak istediğinizden emin misiniz?" },
+        { x => x.ConfirmText, "Onayla" },
+        { x => x.CancelText, "İptal" }
+    };
 
-            var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.Small };
-            var dialog = await DialogService.ShowAsync<ConfirmDialog>("Onay", parameters, options);
-            
-            // Console log ekle
-            await JSRuntime.InvokeVoidAsync("console.log", "[APPROVE] Dialog açıldı, result bekleniyor...");
-            
-            DialogResult? result = null;
-            bool dialogConfirmed = false;
-            
-            try
-            {
-                result = await dialog.Result;
-                await JSRuntime.InvokeVoidAsync("console.log", $"[APPROVE] Dialog result alındı - Canceled: {result?.Canceled}, Data: {result?.Data}, Data Type: {result?.Data?.GetType()?.Name}");
-                System.Diagnostics.Debug.WriteLine($"[APPROVE] Dialog result alındı - Canceled: {result?.Canceled}, Data: {result?.Data}, Data Type: {result?.Data?.GetType()?.Name}");
-                
-                // Result kontrolü
-                if (result != null && !result.Canceled)
-                {
-                    if (result.Data is bool confirmed)
-                    {
-                        dialogConfirmed = confirmed;
-                    }
-                    else
-                    {
-                        // Data bool değilse de onaylanmış say (MudBlazor bazen farklı dönebilir)
-                        dialogConfirmed = true;
-                    }
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Dialog iptal edildi, sessizce çık
-                await JSRuntime.InvokeVoidAsync("console.log", "[APPROVE] Dialog iptal edildi (OperationCanceledException)");
-                System.Diagnostics.Debug.WriteLine("[APPROVE] Dialog iptal edildi (OperationCanceledException)");
-                return;
-            }
-            catch (Exception ex)
-            {
-                await JSRuntime.InvokeVoidAsync("console.log", $"[APPROVE] Dialog exception: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[APPROVE] Dialog exception: {ex.Message}");
-                Snackbar.Add($"Dialog hatası: {ex.Message}", Severity.Error);
-                return;
-            }
+    var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
 
-            await JSRuntime.InvokeVoidAsync("console.log", $"[APPROVE] Dialog confirmed: {dialogConfirmed}");
+    var dialog = await DialogService.ShowAsync<ConfirmDialog>("Onay", parameters, options);
+    var result = await dialog.Result;
 
-            // Dialog onaylandıysa API çağrısını yap
-            if (dialogConfirmed)
-            {
-                await JSRuntime.InvokeVoidAsync("console.log", "[APPROVE] Dialog onaylandı, API çağrısı yapılıyor...");
-                
-                IsLoading = true;
-                StateHasChanged();
-                
-                try
-                {
-                    var adminName = AuthState.CurrentUser?.FullName ?? AuthState.CurrentUser?.Username ?? "Admin";
-                    System.Diagnostics.Debug.WriteLine($"[APPROVE] Admin name: {adminName}, Appointment ID: {appointment.Id}");
-                    
-                    // Mevcut durumu kontrol et
-                    var currentAppointment = await AppointmentService.GetAppointmentByIdAsync(appointment.Id);
-                    if (currentAppointment == null)
-                    {
-                        Snackbar.Add("Randevu bulunamadı!", Severity.Error);
-                        await LoadAppointments();
-                        return;
-                    }
-
-                    System.Diagnostics.Debug.WriteLine($"[APPROVE] Mevcut durum: {currentAppointment.Status}");
-
-                    // API çağrısını yap
-                    try
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[APPROVE] API çağrısı başlatılıyor...");
-                        await AppointmentService.ApproveAppointmentAsync(appointment.Id, adminName);
-                        System.Diagnostics.Debug.WriteLine($"[APPROVE] API çağrısı başarılı - Randevu ID: {appointment.Id}");
-                    }
-                    catch (Exception apiEx)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[APPROVE] API hatası: {apiEx.Message}");
-                        System.Diagnostics.Debug.WriteLine($"[APPROVE] API hatası stack trace: {apiEx.StackTrace}");
-                        throw;
-                    }
-                    
-                    // Kısa bir bekleme (veritabanı güncellemesinin tamamlanması için)
-                    await Task.Delay(500);
-                    
-                    // Güncel durumu kontrol et
-                    var updatedAppointment = await AppointmentService.GetAppointmentByIdAsync(appointment.Id);
-                    if (updatedAppointment != null)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[APPROVE] Güncel durum kontrolü - Randevu ID: {updatedAppointment.Id}, Durum: {updatedAppointment.Status}");
-                        if (updatedAppointment.Status == AppointmentStatus.Approved)
-                        {
-                            Snackbar.Add("Randevu başarıyla onaylandı!", Severity.Success);
-                        }
-                        else
-                        {
-                            Snackbar.Add($"Randevu onaylandı ancak durum güncellenemedi. Mevcut durum: {updatedAppointment.Status}", Severity.Warning);
-                        }
-                    }
-                    else
-                    {
-                        Snackbar.Add("Randevu onaylandı ancak güncel durum alınamadı.", Severity.Warning);
-                    }
-                    
-                    // Eğer filtre Pending ise, onaylanan randevu listede görünmeyeceği için filtreyi "Tümü" yap
-                    if (Filter.Status == AppointmentStatus.Pending)
-                    {
-                        Filter.Status = null;
-                    }
-                    
-                    // Listeyi yenile - güncel verileri almak için
-                    await LoadAppointments();
-                }
-                catch (HttpRequestException ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[APPROVE] HttpRequestException: {ex.Message}");
-                    Snackbar.Add($"API hatası: {ex.Message}", Severity.Error);
-                    await LoadAppointments();
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[APPROVE] Exception: {ex.Message}, StackTrace: {ex.StackTrace}");
-                    Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
-                    await LoadAppointments();
-                }
-                finally
-                {
-                    IsLoading = false;
-                    StateHasChanged();
-                }
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine("[APPROVE] Dialog result kontrolü başarısız - API çağrısı yapılmadı");
-            }
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Dialog hatası: {ex.Message}", Severity.Error);
-        }
+    if (result.Canceled)
+    {
+        return;
     }
 
-    private async Task RejectAppointment(AppointmentDto appointment)
+    IsLoading = true;
+    StateHasChanged();
+    
+    try
     {
-        try
+        var adminName = AuthState.CurrentUser?.FullName ?? AuthState.CurrentUser?.Username ?? "Admin";
+        await AppointmentService.ApproveAppointmentAsync(appointment.Id, adminName);
+        
+        Snackbar.Add("Randevu başarıyla onaylandı!", Severity.Success);
+        
+        if (Filter.Status == AppointmentStatus.Pending)
         {
-            var parameters = new DialogParameters
-            {
-                ["Appointment"] = appointment
-            };
-
-            var options = new DialogOptions() 
-            { 
-                CloseButton = true, 
-                MaxWidth = MaxWidth.Medium,
-                FullWidth = true
-            };
-
-            var dialog = await DialogService.ShowAsync<RejectDialog>("Randevu Reddet", parameters, options);
-            
-            // Console log ekle
-            await JSRuntime.InvokeVoidAsync("console.log", "[REJECT] Dialog açıldı, result bekleniyor...");
-            
-            DialogResult? result = null;
-            string? comment = null;
-            
-            try
-            {
-                result = await dialog.Result;
-                await JSRuntime.InvokeVoidAsync("console.log", $"[REJECT] Dialog result alındı - Canceled: {result?.Canceled}, Data: {result?.Data}, Data Type: {result?.Data?.GetType()?.Name}");
-                System.Diagnostics.Debug.WriteLine($"[REJECT] Dialog result alındı - Canceled: {result?.Canceled}, Data: {result?.Data}, Data Type: {result?.Data?.GetType()?.Name}");
-                
-                // Result kontrolü
-                if (result != null && !result.Canceled && result.Data is string commentData)
-                {
-                    comment = commentData;
-                }
-            }
-            catch (OperationCanceledException)
-            {
-                // Dialog iptal edildi, sessizce çık
-                await JSRuntime.InvokeVoidAsync("console.log", "[REJECT] Dialog iptal edildi (OperationCanceledException)");
-                System.Diagnostics.Debug.WriteLine("[REJECT] Dialog iptal edildi (OperationCanceledException)");
-                return;
-            }
-            catch (Exception ex)
-            {
-                await JSRuntime.InvokeVoidAsync("console.log", $"[REJECT] Dialog exception: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[REJECT] Dialog exception: {ex.Message}");
-                Snackbar.Add($"Dialog hatası: {ex.Message}", Severity.Error);
-                return;
-            }
-
-            await JSRuntime.InvokeVoidAsync("console.log", $"[REJECT] Dialog result - Comment: {comment}, IsNullOrWhiteSpace: {string.IsNullOrWhiteSpace(comment)}");
-
-            if (!string.IsNullOrWhiteSpace(comment))
-            {
-                await JSRuntime.InvokeVoidAsync("console.log", $"[REJECT] Dialog onaylandı, API çağrısı yapılıyor... Comment: {comment}");
-                System.Diagnostics.Debug.WriteLine($"[REJECT] Dialog onaylandı, API çağrısı yapılıyor... Comment: {comment}");
-                IsLoading = true;
-                StateHasChanged();
-                
-                try
-                {
-                    var adminName = AuthState.CurrentUser?.FullName ?? AuthState.CurrentUser?.Username ?? "Admin";
-                    System.Diagnostics.Debug.WriteLine($"[REJECT] Admin name: {adminName}, Appointment ID: {appointment.Id}, Comment: {comment}");
-                    
-                    // API çağrısını yap
-                    try
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[REJECT] API çağrısı başlatılıyor...");
-                        await AppointmentService.RejectAppointmentAsync(appointment.Id, adminName, comment);
-                        System.Diagnostics.Debug.WriteLine($"[REJECT] API çağrısı başarılı - Randevu ID: {appointment.Id}");
-                    }
-                    catch (Exception apiEx)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[REJECT] API hatası: {apiEx.Message}");
-                        System.Diagnostics.Debug.WriteLine($"[REJECT] API hatası stack trace: {apiEx.StackTrace}");
-                        throw;
-                    }
-                    
-                    // Kısa bir bekleme (veritabanı güncellemesinin tamamlanması için)
-                    await Task.Delay(500);
-                    
-                    // Güncel durumu kontrol et
-                    var updatedAppointment = await AppointmentService.GetAppointmentByIdAsync(appointment.Id);
-                    if (updatedAppointment != null)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"[REJECT] Güncel durum kontrolü - Randevu ID: {updatedAppointment.Id}, Durum: {updatedAppointment.Status}");
-                        if (updatedAppointment.Status == AppointmentStatus.Rejected)
-                        {
-                            Snackbar.Add("Randevu başarıyla reddedildi!", Severity.Success);
-                        }
-                        else
-                        {
-                            Snackbar.Add($"Randevu reddedildi ancak durum güncellenemedi. Mevcut durum: {updatedAppointment.Status}", Severity.Warning);
-                        }
-                    }
-                    else
-                    {
-                        Snackbar.Add("Randevu reddedildi ancak güncel durum alınamadı.", Severity.Warning);
-                    }
-                    
-                    // Eğer filtre Pending ise, reddedilen randevu listede görünmeyeceği için filtreyi "Tümü" yap
-                    if (Filter.Status == AppointmentStatus.Pending)
-                    {
-                        Filter.Status = null;
-                    }
-                    
-                    // Listeyi yenile - güncel verileri almak için
-                    await LoadAppointments();
-                }
-                catch (HttpRequestException ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[REJECT] HttpRequestException: {ex.Message}");
-                    Snackbar.Add($"API hatası: {ex.Message}", Severity.Error);
-                    await LoadAppointments();
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[REJECT] Exception: {ex.Message}, StackTrace: {ex.StackTrace}");
-                    Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
-                    await LoadAppointments();
-                }
-                finally
-                {
-                    IsLoading = false;
-                    StateHasChanged();
-                }
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine($"[REJECT] Dialog result kontrolü başarısız - result null: {result == null}, Canceled: {result?.Canceled}, Data is string: {result?.Data is string}, Comment empty: {result?.Data is string comment2 && string.IsNullOrWhiteSpace(comment2)}");
-            }
+            Filter.Status = null;
         }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[REJECT] Outer exception: {ex.Message}, StackTrace: {ex.StackTrace}");
-            Snackbar.Add($"Dialog hatası: {ex.Message}", Severity.Error);
-        }
+        
+        await LoadAppointments();
     }
+    catch (Exception ex)
+    {
+        Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
+    }
+    finally
+    {
+        IsLoading = false;
+        StateHasChanged();
+    }
+}
+
+private async Task RejectAppointment(AppointmentDto appointment)
+{
+    var parameters = new DialogParameters<RejectDialog>
+    {
+        { x => x.Appointment, appointment }
+    };
+
+    var options = new DialogOptions 
+    { 
+        CloseButton = true, 
+        MaxWidth = MaxWidth.Medium,
+        FullWidth = true
+    };
+
+    var dialog = await DialogService.ShowAsync<RejectDialog>("Randevu Reddet", parameters, options);
+    var result = await dialog.Result;
+
+    if (result.Canceled)
+    {
+        return;
+    }
+
+    var comment = result.Data as string;
+    
+    if (string.IsNullOrWhiteSpace(comment))
+    {
+        Snackbar.Add("Red nedeni zorunludur!", Severity.Warning);
+        return;
+    }
+
+    IsLoading = true;
+    StateHasChanged();
+    
+    try
+    {
+        var adminName = AuthState.CurrentUser?.FullName ?? AuthState.CurrentUser?.Username ?? "Admin";
+        await AppointmentService.RejectAppointmentAsync(appointment.Id, adminName, comment);
+        
+        Snackbar.Add("Randevu başarıyla reddedildi!", Severity.Success);
+        
+        if (Filter.Status == AppointmentStatus.Pending)
+        {
+            Filter.Status = null;
+        }
+        
+        await LoadAppointments();
+    }
+    catch (Exception ex)
+    {
+        Snackbar.Add($"Hata: {ex.Message}", Severity.Error);
+    }
+    finally
+    {
+        IsLoading = false;
+        StateHasChanged();
+    }
+}
 
     private async Task ShowDetails(AppointmentDto appointment)
     {

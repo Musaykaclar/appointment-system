@@ -8,6 +8,8 @@ Bu proje, kullanıcıların randevu talebi oluşturması ve yöneticilerin bu ta
 
 ### Özellikler
 
+- ✅ Kullanıcı kayıt ve giriş sistemi
+- ✅ Rol tabanlı yetkilendirme (User/Admin)
 - ✅ Randevu talep formu (Şube seçimi, tarih/saat, açıklama)
 - ✅ Randevu listeleme (Filtreleme, arama, sıralama, sayfalama)
 - ✅ Yönetici paneli (Bekleyen talepleri onaylama/reddetme)
@@ -15,6 +17,7 @@ Bu proje, kullanıcıların randevu talebi oluşturması ve yöneticilerin bu ta
 - ✅ FluentValidation ile doğrulama
 - ✅ Audit trail (Durum değişiklik geçmişi)
 - ✅ MudBlazor ile modern UI
+- ✅ LocalStorage ile oturum yönetimi
 
 ## 🏗️ Mimari
 
@@ -52,7 +55,7 @@ AppointmentSystem/
 ### Gereksinimler
 
 - .NET 8.0 SDK
-- PostgreSQL (veya SQL Server)
+- PostgreSQL
 - Visual Studio 2022 veya VS Code
 
 ### Adımlar
@@ -100,18 +103,67 @@ dotnet run
 - Web: `https://localhost:7000` veya `http://localhost:5000`
 - API Swagger: `https://localhost:7236/swagger`
 
-## 🔐 Login Bilgileri
+## 🔐 Authentication & Kullanıcı Yönetimi
 
-**Not:** Bu proje şu anda authentication içermemektedir. Kullanıcı adları hardcoded olarak kullanılmaktadır:
+Bu proje basit bir authentication sistemi içermektedir. Kullanıcılar kayıt olabilir ve giriş yapabilir.
 
-- **Kullanıcı**: "Kullanıcı" (randevu oluştururken)
-- **Yönetici**: "Admin" (onay/red işlemlerinde)
+### Giriş Yapma
 
-Gerçek bir uygulamada ASP.NET Core Identity veya JWT Authentication kullanılmalıdır.
+1. Uygulama açıldığında otomatik olarak `/login` sayfasına yönlendirilirsiniz
+2. Kullanıcı adı ve şifre ile giriş yapabilirsiniz
+3. Hesabınız yoksa `/register` sayfasından kayıt olabilirsiniz
+
+### Varsayılan Kullanıcılar (Seed Data)
+
+Uygulama ilk çalıştırıldığında otomatik olarak 2 kullanıcı oluşturulur:
+
+#### 👤 Kullanıcı (User)
+- **Kullanıcı Adı**: `user`
+- **Şifre**: `user123`
+- **Rol**: Kullanıcı
+- **Yetkiler**: 
+  - Randevu oluşturma
+  - Kendi randevularını görüntüleme
+  - Randevu listeleme
+
+#### 👨‍💼 Yönetici (Admin)
+- **Kullanıcı Adı**: `admin`
+- **Şifre**: `admin123`
+- **Rol**: Yönetici
+- **Yetkiler**:
+  - Tüm randevuları görüntüleme
+  - Randevu onaylama/reddetme
+  - Yönetici paneli erişimi
+  - Randevu detayları ve audit trail görüntüleme
+
+### Kullanıcı Rolleri
+
+- **User (Kullanıcı)**: Normal kullanıcılar, randevu oluşturabilir ve kendi randevularını görüntüleyebilir
+- **Admin (Yönetici)**: Yöneticiler, tüm randevuları yönetebilir ve onay/red işlemleri yapabilir
+
+### Yeni Kullanıcı Kaydı
+
+1. `/register` sayfasına gidin
+2. Ad Soyad, Kullanıcı Adı, E-posta ve Şifre bilgilerini girin
+3. "Kayıt Ol" butonuna tıklayın
+4. Kayıt başarılı olduğunda otomatik olarak giriş yapılır ve randevu listesi sayfasına yönlendirilirsiniz
+
+**Not:** Yeni kayıt olan kullanıcılar varsayılan olarak **User** rolüne sahiptir. Admin rolü yalnızca veritabanı üzerinden manuel olarak atanabilir.
+
+### Güvenlik Notları
+
+⚠️ **Önemli**: Bu proje eğitim amaçlıdır ve production için uygun değildir. Şu anda:
+- Şifreler hash'lenmemiş olarak saklanmaktadır (gerçek uygulamada BCrypt veya benzeri kullanılmalı)
+- Basit token sistemi kullanılmaktadır (gerçek uygulamada JWT kullanılmalı)
+- HTTPS zorunluluğu yoktur (production'da mutlaka kullanılmalı)
 
 ## 📊 Seed Verisi
 
 Uygulama ilk çalıştırıldığında otomatik olarak:
+
+- **2 Kullanıcı** oluşturulur:
+  - **Admin**: `admin` / `admin123` (Yönetici rolü)
+  - **User**: `user` / `user123` (Kullanıcı rolü)
 
 - **5 Şube** oluşturulur:
   - İstanbul Şube
@@ -124,31 +176,63 @@ Uygulama ilk çalıştırıldığında otomatik olarak:
 
 ## 🎯 Kullanım Senaryoları
 
-### Kullanıcı (Müşteri/Personel)
+### 🔑 Giriş Yapma
 
-1. **Randevu Talep Formu** sayfasına gidin
+1. Uygulama açıldığında `/login` sayfasına yönlendirilirsiniz
+2. Kullanıcı adı ve şifre ile giriş yapın:
+   - **Kullanıcı**: `user` / `user123`
+   - **Yönetici**: `admin` / `admin123`
+3. Giriş başarılı olduğunda rolünüze göre yönlendirilirsiniz:
+   - **Kullanıcı** → `/appointments` (Randevu Listesi)
+   - **Yönetici** → `/admin-appointments` (Yönetici Paneli)
+
+### 👤 Kullanıcı (Müşteri/Personel) İşlemleri
+
+#### Randevu Oluşturma
+1. Giriş yaptıktan sonra **Randevu Talep Formu** sayfasına gidin (`/appointment-form`)
 2. Şube seçin (dropdown'dan 5 şube arasından)
 3. Tarih ve saat bilgilerini girin
 4. Açıklama ekleyin (opsiyonel)
 5. "Gönder" butonuna tıklayın
-6. Randevu **Pending** durumuna geçer
+6. Randevu **Pending** durumuna geçer ve yönetici onayı bekler
 
-### Yönetici
+#### Randevu Listeleme
+1. **Randevu Listesi** sayfasında (`/appointments`) kendi randevularınızı görüntüleyin
+2. Durum, tarih aralığı ve arama ile filtreleyin
+3. Tarih veya duruma göre sıralayın
+4. Sayfalama ile gezinin (10/25/50 kayıt)
+5. Randevu detaylarını görüntülemek için randevuya tıklayın
 
-1. **Yönetici Paneli** sayfasına gidin
+### 👨‍💼 Yönetici İşlemleri
+
+#### Randevu Onaylama/Reddetme
+1. **Yönetici Paneli** sayfasına gidin (`/admin-appointments`)
 2. Bekleyen (Pending) randevu taleplerini görüntüleyin
 3. Her randevu için:
-   - **Onayla**: Randevuyu onaylar (Approved)
-   - **Reddet**: Red nedeni girerek reddeder (Rejected - açıklama zorunlu)
+   - **Onayla**: Randevuyu onaylar (Approved durumuna geçer)
+   - **Reddet**: Red nedeni girerek reddeder (Rejected durumuna geçer - açıklama zorunlu)
+4. Onaylanan veya reddedilen randevular listeden kaldırılır
 
-### Randevu Listesi
+#### Randevu Yönetimi
+- Tüm randevuları görüntüleyin (tüm kullanıcıların randevuları)
+- Filtreleme, arama ve sıralama yapın
+- Randevu detaylarını ve audit trail (durum değişiklik geçmişi) görüntüleyin
+- Randevu durumlarını takip edin
 
-- Tüm randevuları görüntüleyin
-- Durum, tarih aralığı ve arama ile filtreleyin
-- Tarih veya duruma göre sıralayın
-- Sayfalama ile gezinin (10/25/50 kayıt)
+### 📋 Randevu Listesi Özellikleri
+
+- **Filtreleme**: Durum, tarih aralığı, şube, kullanıcı
+- **Arama**: Randevu başlığı ve açıklamasında arama
+- **Sıralama**: Tarih, durum, oluşturulma tarihi
+- **Sayfalama**: 10/25/50 kayıt per sayfa
+- **Detay Görüntüleme**: Randevu detayları ve audit trail modalı
 
 ## 📝 API Endpoints
+
+### Authentication
+- `POST /api/auth/login` - Kullanıcı girişi
+- `POST /api/auth/register` - Yeni kullanıcı kaydı
+- `GET /api/auth/me` - Mevcut kullanıcı bilgileri
 
 ### Branches
 - `GET /api/branches` - Tüm şubeleri listele
@@ -225,12 +309,16 @@ Bu proje eğitim amaçlı geliştirilmiştir.
 
 ## 🔮 Gelecek Geliştirmeler
 
-- [ ] Authentication & Authorization (JWT/Identity)
+- [x] Authentication & Authorization (Basit sistem mevcut)
+- [ ] JWT Token Authentication (Şu anda basit token kullanılıyor)
+- [ ] Şifre hash'leme (BCrypt/Argon2)
 - [ ] Email bildirimleri
 - [ ] Randevu çakışma kontrolü
 - [ ] Takvim görünümü
 - [ ] Export/Import özellikleri
 - [ ] Raporlama
+- [ ] Şifre sıfırlama
+- [ ] Kullanıcı profil yönetimi
 
 ---
 
