@@ -2,24 +2,24 @@
 
 Blazor WebAssembly ve Minimal API kullanılarak geliştirilmiş bir randevu talep, listeleme ve yönetici onay/red akışı uygulaması.
 
-## 📋 Proje Hakkında
+##  Proje Hakkında
 
 Bu proje, kullanıcıların randevu talebi oluşturması ve yöneticilerin bu talepleri onaylaması/reddetmesi için geliştirilmiş bir web uygulamasıdır.
 
 ### Özellikler
 
-- ✅ Kullanıcı kayıt ve giriş sistemi
-- ✅ Rol tabanlı yetkilendirme (User/Admin)
-- ✅ Randevu talep formu (Şube seçimi, tarih/saat, açıklama)
-- ✅ Randevu listeleme (Filtreleme, arama, sıralama, sayfalama)
-- ✅ Yönetici paneli (Bekleyen talepleri onaylama/reddetme)
-- ✅ Detay modalı (Randevu detayları ve audit trail)
-- ✅ FluentValidation ile doğrulama
-- ✅ Audit trail (Durum değişiklik geçmişi)
-- ✅ MudBlazor ile modern UI
-- ✅ LocalStorage ile oturum yönetimi
+-  Kullanıcı kayıt ve giriş sistemi
+-  Rol tabanlı yetkilendirme (User/Admin)
+-  Randevu talep formu (Şube seçimi, tarih/saat, açıklama)
+-  Randevu listeleme (Filtreleme, arama, sıralama, sayfalama)
+-  Yönetici paneli (Bekleyen talepleri onaylama/reddetme)
+-  Detay modalı (Randevu detayları ve audit trail)
+-  FluentValidation ile doğrulama
+-  Audit trail (Durum değişiklik geçmişi)
+-  MudBlazor ile modern UI
+-  LocalStorage ile oturum yönetimi
 
-## 🏗️ Mimari
+##  Mimari
 
 Proje Clean Architecture prensiplerine uygun olarak katmanlı mimari ile geliştirilmiştir:
 
@@ -50,7 +50,7 @@ AppointmentSystem/
 - **MudBlazor** (UI Framework)
 - **FluentValidation**
 
-## 📦 Kurulum
+##  Kurulum
 
 ### Gereksinimler
 
@@ -126,7 +126,7 @@ dotnet run
 - Web: `https://localhost:7000` veya `http://localhost:5000`
 - API Swagger: `https://localhost:7236/swagger`
 
-## 🔐 Authentication & Kullanıcı Yönetimi
+##  Authentication & Kullanıcı Yönetimi
 
 Bu proje basit bir authentication sistemi içermektedir. Kullanıcılar kayıt olabilir ve giriş yapabilir.
 
@@ -140,7 +140,7 @@ Bu proje basit bir authentication sistemi içermektedir. Kullanıcılar kayıt o
 
 Uygulama ilk çalıştırıldığında otomatik olarak 2 kullanıcı oluşturulur:
 
-#### 👤 Kullanıcı (User)
+####  Kullanıcı (User)
 - **Kullanıcı Adı**: `user`
 - **Şifre**: `user123`
 - **Rol**: Kullanıcı
@@ -149,7 +149,7 @@ Uygulama ilk çalıştırıldığında otomatik olarak 2 kullanıcı oluşturulu
   - Kendi randevularını görüntüleme
   - Randevu listeleme
 
-#### 👨‍💼 Yönetici (Admin)
+####  Yönetici (Admin)
 - **Kullanıcı Adı**: `admin`
 - **Şifre**: `admin123`
 - **Rol**: Yönetici
@@ -175,12 +175,12 @@ Uygulama ilk çalıştırıldığında otomatik olarak 2 kullanıcı oluşturulu
 
 ### Güvenlik Notları
 
-⚠️ **Önemli**: Bu proje eğitim amaçlıdır ve production için uygun değildir. Şu anda:
+ **Önemli**: Bu proje eğitim amaçlıdır ve production için uygun değildir. Şu anda:
 - Şifreler hash'lenmemiş olarak saklanmaktadır (gerçek uygulamada BCrypt veya benzeri kullanılmalı)
 - Basit token sistemi kullanılmaktadır (gerçek uygulamada JWT kullanılmalı)
 - HTTPS zorunluluğu yoktur (production'da mutlaka kullanılmalı)
 
-## 📊 Seed Verisi
+##  Seed Verisi
 
 Uygulama ilk çalıştırıldığında otomatik olarak:
 
@@ -197,9 +197,9 @@ Uygulama ilk çalıştırıldığında otomatik olarak:
 
 - **1 Örnek Randevu** oluşturulur (Pending durumunda)
 
-## 🎯 Kullanım Senaryoları
+##  Kullanım Senaryoları
 
-### 🔑 Giriş Yapma
+###  Giriş Yapma
 
 1. Uygulama açıldığında `/login` sayfasına yönlendirilirsiniz
 2. Kullanıcı adı ve şifre ile giriş yapın:
@@ -209,7 +209,7 @@ Uygulama ilk çalıştırıldığında otomatik olarak:
    - **Kullanıcı** → `/appointments` (Randevu Listesi)
    - **Yönetici** → `/admin-appointments` (Yönetici Paneli)
 
-### 👤 Kullanıcı (Müşteri/Personel) İşlemleri
+###  Kullanıcı (Müşteri/Personel) İşlemleri
 
 #### Randevu Oluşturma
 1. Giriş yaptıktan sonra **Randevu Talep Formu** sayfasına gidin (`/appointment-form`)
@@ -226,7 +226,7 @@ Uygulama ilk çalıştırıldığında otomatik olarak:
 4. Sayfalama ile gezinin (10/25/50 kayıt)
 5. Randevu detaylarını görüntülemek için randevuya tıklayın
 
-### 👨‍💼 Yönetici İşlemleri
+### Yönetici İşlemleri
 
 #### Randevu Onaylama/Reddetme
 1. **Yönetici Paneli** sayfasına gidin (`/admin-appointments`)
@@ -242,7 +242,7 @@ Uygulama ilk çalıştırıldığında otomatik olarak:
 - Randevu detaylarını ve audit trail (durum değişiklik geçmişi) görüntüleyin
 - Randevu durumlarını takip edin
 
-### 📋 Randevu Listesi Özellikleri
+###  Randevu Listesi Özellikleri
 
 - **Filtreleme**: Durum, tarih aralığı, şube, kullanıcı
 - **Arama**: Randevu başlığı ve açıklamasında arama
@@ -250,7 +250,7 @@ Uygulama ilk çalıştırıldığında otomatik olarak:
 - **Sayfalama**: 10/25/50 kayıt per sayfa
 - **Detay Görüntüleme**: Randevu detayları ve audit trail modalı
 
-## 📝 API Endpoints
+##  API Endpoints
 
 ### Authentication
 - `POST /api/auth/login` - Kullanıcı girişi
@@ -271,7 +271,7 @@ Uygulama ilk çalıştırıldığında otomatik olarak:
 - `POST /api/appointments/{id}/approve` - Randevu onayla
 - `POST /api/appointments/{id}/reject` - Randevu reddet
 
-## ✅ Doğrulama Kuralları
+##  Doğrulama Kuralları
 
 - **Şube**: Zorunlu
 - **Talep Tarihi**: Bugünden önce olamaz
@@ -279,7 +279,7 @@ Uygulama ilk çalıştırıldığında otomatik olarak:
 - **Bitiş Saati**: Başlangıç saatinden sonra olmalı
 - **Red Nedeni**: Reddetme işleminde zorunlu
 
-## 🔄 Durum Akışı
+##  Durum Akışı
 
 ```
 Draft → Pending → Approved
@@ -291,7 +291,7 @@ Draft → Pending → Approved
 - **Approved**: Yönetici onayladığında
 - **Rejected**: Yönetici reddettiğinde (açıklama zorunlu)
 
-## 🐛 Hata Yönetimi
+##  Hata Yönetimi
 
 - FluentValidation ile alan bazlı doğrulama
 - Toast/Snackbar bildirimleri (başarılı/hatalı işlemler)
@@ -335,7 +335,7 @@ Draft → Pending → Approved
 ### 12. Randevu Talebi
 ![Randevu Talebi](images/Randevu-Talebi.png)
 
-## 🚀 Geliştirme
+##  Geliştirme
 
 ### Migration Oluşturma
 
@@ -351,11 +351,11 @@ cd src/AppointmentSystem.Api
 dotnet ef database update
 ```
 
-## 📄 Lisans
+##  Lisans
 
 Bu proje eğitim amaçlı geliştirilmiştir.
 
-## 👨‍💻 Geliştirici Notları
+##  Geliştirici Notları
 
 - Proje .NET 8.0 ile geliştirilmiştir
 - PostgreSQL veritabanı kullanılmıştır (MSSQL'e değiştirilebilir)
