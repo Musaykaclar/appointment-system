@@ -18,7 +18,7 @@ namespace AppointmentSystem.Infrastructure.Data
                     new User 
                     { 
                         Username = "admin", 
-                        Password = "admin123", // Gerçek uygulamada hash'lenmiş olmalı
+                        Password = "admin123", 
                         Email = "admin@example.com",
                         FullName = "Yönetici",
                         Role = UserRole.Admin,
@@ -27,7 +27,7 @@ namespace AppointmentSystem.Infrastructure.Data
                     new User 
                     { 
                         Username = "user", 
-                        Password = "user123", // Gerçek uygulamada hash'lenmiş olmalı
+                        Password = "user123", 
                         Email = "user@example.com",
                         FullName = "Kullanıcı",
                         Role = UserRole.User,

@@ -71,7 +71,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Initialization'ı bekle
+        // initialization bekle
         await AuthState.WaitForInitializationAsync();
         
         // Login kontrolü
@@ -81,7 +81,7 @@
             return;
         }
 
-        // Yönetici bu sayfaya erişemez
+        // Adminbu sayfaya erişemez
         if (AuthState.IsAdmin)
         {
             Snackbar.Add("Yöneticiler bu sayfaya erişemez!", Severity.Warning);

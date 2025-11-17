@@ -6,6 +6,7 @@
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
 
+// register sayfası
 <PageTitle>Kayıt Ol</PageTitle>
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
@@ -87,10 +88,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Initialization'ı bekle
+        // initialization burada bekleniyor.
         await AuthState.WaitForInitializationAsync();
         
-        // Eğer zaten giriş yapılmışsa ana sayfaya yönlendir
+        // giris yapıldıysa ana sayfaya yönlendiriliyor
         if (AuthState.IsAuthenticated)
         {
             if (AuthState.IsAdmin)
@@ -122,7 +123,7 @@
             {
                 Snackbar.Add("Kayıt başarılı! Giriş yapılıyor...", Severity.Success);
                 
-                // Otomatik giriş yap ve yönlendir
+                // Otomatik giriş yap ve yönlendir ve delay ile bekleniyor
                 await Task.Delay(500);
                 Navigation.NavigateTo("/appointments");
             }

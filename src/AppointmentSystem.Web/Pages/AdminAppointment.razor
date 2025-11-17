@@ -147,24 +147,28 @@
         }
     }
 
+    //Filtreleri uygulamak için çalışır
     private async Task ApplyFilters()
     {
         Filter.PageNumber = 1;
         await LoadAppointments();
     }
 
+    //Filtreleri temizlemek için çalışır
     private async Task ClearFilters()
     {
         Filter = new AppointmentFilterDto { PageSize = 10 };
         await LoadAppointments();
     }
 
+    //Sayfa değiştiğinde çalışır
     private async Task OnPageChanged(int page)
     {
         Filter.PageNumber = page;
         await LoadAppointments();
     }
 
+    //Sayfa boyutu değiştiğinde çalışır
     private async Task OnPageSizeChanged(int pageSize)
     {
         Filter.PageSize = pageSize;
@@ -174,6 +178,7 @@
 
 private IDialogReference? currentDialog;
 
+//Randevu onaylamak için çalışır
 private async Task ApproveAppointment(AppointmentDto appointment)
 {
     var parameters = new DialogParameters
@@ -195,6 +200,7 @@ private async Task ApproveAppointment(AppointmentDto appointment)
     currentDialog = await DialogService.ShowAsync<ConfirmDialog>("Onay", parameters, options);
 }
 
+//Randevu onaylandıktan sonra çalışır
 private async Task ProcessApproval(AppointmentDto appointment)
 {
     IsLoading = true;
@@ -225,6 +231,7 @@ private async Task ProcessApproval(AppointmentDto appointment)
     }
 }
 
+//Randevu reddetmek için çalışır
 private async Task RejectAppointment(AppointmentDto appointment)
 {
     var parameters = new DialogParameters
@@ -250,6 +257,7 @@ private async Task RejectAppointment(AppointmentDto appointment)
     currentDialog = await DialogService.ShowAsync<RejectDialog>("Randevu Reddet", parameters, options);
 }
 
+//Randevu reddedildiktan sonra çalışır
 private async Task ProcessRejection(AppointmentDto appointment, string comment)
 {
     IsLoading = true;
@@ -279,6 +287,8 @@ private async Task ProcessRejection(AppointmentDto appointment, string comment)
         StateHasChanged();
     }
 }
+
+//Randevu detaylarını görüntülemek için çalışır
     private async Task ShowDetails(AppointmentDto appointment)
     {
         // Önce güncel randevu bilgilerini yükle
@@ -303,7 +313,7 @@ private async Task ProcessRejection(AppointmentDto appointment, string comment)
         var dialog = await DialogService.ShowAsync<AppointmentDetailDialog>("Randevu Detayları", parameters, options);
         var result = await dialog.Result;
         
-        // Dialog kapandıktan sonra listeyi yenile (durum değişiklikleri için)
+        // Dialog kapandıktan sonra listeyi yenile
         await LoadAppointments();
     }
 

@@ -8,10 +8,10 @@
         // Uygulama başlarken hemen initialization yap
         await AuthState.InitializeAsync();
     }
-
+    
     public async ValueTask DisposeAsync()
     {
-        // Cleanup if needed
+        // Temizlik yapılıyor
         await Task.CompletedTask;
     }
 }

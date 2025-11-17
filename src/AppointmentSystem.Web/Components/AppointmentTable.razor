@@ -138,14 +138,14 @@
     [Parameter] public EventCallback<int> OnPageChanged { get; set; }
     [Parameter] public EventCallback<int> OnPageSizeChanged { get; set; }
     
-    // Display options
+    // Görüntüleme seçenekleri
     [Parameter] public bool ShowRequestedBy { get; set; } = true;
     [Parameter] public bool ShowRequestedByAsChip { get; set; } = false;
     [Parameter] public bool ShowDescription { get; set; } = false;
     [Parameter] public bool ShowDateBeforeBranch { get; set; } = false;
     [Parameter] public bool ShowApproveRejectButtons { get; set; } = false;
     
-    // Actions
+    // İşlemler
     [Parameter] public Func<AppointmentDto, Task>? OnApprove { get; set; }
     [Parameter] public Func<AppointmentDto, Task>? OnReject { get; set; }
     [Parameter] public Func<AppointmentDto, Task>? OnShowDetails { get; set; }

@@ -26,7 +26,7 @@
             <DataAnnotationsValidator />
 
             <MudGrid Spacing="3">
-                <!-- Şube Seçimi -->
+                //Şube Seçimi
                 <MudItem xs="12">
                     @if (IsLoadingBranches)
                     {
@@ -62,7 +62,7 @@
                     }
                 </MudItem>
 
-                <!-- Açıklama -->
+                //Açıklama
                 <MudItem xs="12">
                     <MudTextField @bind-Value="AppointmentModel.Description" 
                                   Label="Açıklama" 
@@ -74,7 +74,7 @@
                                   FullWidth="true" />
                 </MudItem>
 
-                <!-- Talep Tarihi -->
+                //Talep Tarihi
                 <MudItem xs="12" md="6">
                     <MudDatePicker @bind-Date="selectedDate" 
                                   Label="Talep Tarihi*" 
@@ -90,7 +90,7 @@
                     }
                 </MudItem>
 
-                <!-- Başlangıç Saati -->
+                //Başlangıç Saati
                 <MudItem xs="12" md="3">
                     <MudTextField @bind-Value="startTimeString" 
                                   Label="Başlangıç Saati*" 
@@ -102,7 +102,7 @@
                     <ValidationMessage For="@(() => AppointmentModel.StartTime)" />
                 </MudItem>
 
-                <!-- Bitiş Saati -->
+                //Bitiş Saati
                 <MudItem xs="12" md="3">
                     <MudTextField @bind-Value="endTimeString" 
                                   Label="Bitiş Saati*" 
@@ -114,7 +114,7 @@
                     <ValidationMessage For="@(() => AppointmentModel.EndTime)" />
                 </MudItem>
 
-                <!-- Lokasyon -->
+                //Lokasyon
                 @if (!string.IsNullOrEmpty(Location))
                 {
                     <MudItem xs="12">
@@ -127,7 +127,7 @@
                     </MudItem>
                 }
 
-                <!-- Validation Hatası -->
+                //Validation Hatası
                 @if (!string.IsNullOrEmpty(validationError))
                 {
                     <MudItem xs="12">
@@ -135,7 +135,7 @@
                     </MudItem>
                 }
 
-                <!-- Gönder Butonu -->
+                //Gönder Butonu
                 <MudItem xs="12" Class="mt-4">
                     <div class="d-flex gap-2">
                         <MudButton ButtonType="ButtonType.Submit" 
@@ -178,7 +178,7 @@
         {
             if (value.HasValue)
             {
-                AppointmentModel.Date = value.Value.Date; // Sadece tarih kısmını al
+                AppointmentModel.Date = value.Value.Date; // Sadece tarih kısmı alınsn
             }
             else
             {
@@ -258,6 +258,7 @@
         await LoadBranches();
     }
 
+    //Şubeleri yüklemek için çalışır
     private async Task LoadBranches()
     {
         IsLoadingBranches = true;
@@ -304,6 +305,7 @@
 
 
 
+    //Başlangıç Saati değiştiğinde çalışır
     private void OnStartTimeChanged()
     {
         if (TimeSpan.TryParse(startTimeString, out var time))
@@ -314,6 +316,7 @@
         StateHasChanged();
     }
 
+    //Bitiş Saati değiştiğinde çalışır
     private void OnEndTimeChanged()
     {
         if (TimeSpan.TryParse(endTimeString, out var time))
@@ -324,6 +327,7 @@
         StateHasChanged();
     }
 
+    //Form doğrulama için çalışır
     private void ValidateForm()
     {
         validationError = string.Empty;
@@ -341,6 +345,7 @@
         }
     }
 
+    //Form gönderildiğinde çalışır
     private async Task HandleValidSubmit()
     {
         validationError = string.Empty;

@@ -9,7 +9,6 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// API Base Address - appsettings.json'dan oku, yoksa default değer kullan
 var apiBaseAddress = builder.Configuration["ApiBaseAddress"] ?? "http://localhost:5083";
 
 builder.Services.AddScoped(sp => new HttpClient 

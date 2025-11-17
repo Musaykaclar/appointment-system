@@ -30,7 +30,7 @@ namespace AppointmentSystem.Application.DTOs
         public bool? SortDescending { get; set; }
         public int? PageNumber { get; set; }
         public int? PageSize { get; set; }
-        public int? RequestedById { get; set; } // Kullanıcı ID'si - null ise tüm randevular (admin için)
+        public int? RequestedById { get; set; }
     }
 
     public class PagedResult<T>

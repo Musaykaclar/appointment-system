@@ -30,7 +30,7 @@ namespace AppointmentSystem.Infrastructure.Data
                 entity.Property(x => x.Description).HasMaxLength(500);
                 entity.Property(x => x.AdminComment).HasMaxLength(500);
                 
-                // Date alanını UTC'ye çevir
+                // Date alanını UTC'ye çevirir
                 entity.Property(x => x.Date)
                       .HasConversion(
                           v => v.ToUniversalTime(),
@@ -47,7 +47,7 @@ namespace AppointmentSystem.Infrastructure.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Branch
+            // Brancch
             modelBuilder.Entity<Branch>(entity =>
             {
                 entity.HasKey(x => x.Id);
