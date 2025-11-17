@@ -76,86 +76,79 @@ namespace AppointmentSystem.Web.Services
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task ApproveAppointmentAsync(int id, string adminUser)
+       public async Task ApproveAppointmentAsync(int id, string adminUser)
+{
+    AddAuthHeaders();
+    var response = await _httpClient.PostAsJsonAsync($"/api/appointments/{id}/approve", new { AdminUser = adminUser });
+    
+    if (!response.IsSuccessStatusCode)
+    {
+        var errorContent = await response.Content.ReadAsStringAsync();
+        var errorMessage = $"Randevu onaylama başarısız: {response.StatusCode}";
+        try
         {
-            AddAuthHeaders();
-            var response = await _httpClient.PostAsJsonAsync($"/api/appointments/{id}/approve", new { AdminUser = adminUser });
-            
-            if (!response.IsSuccessStatusCode)
+            if (!string.IsNullOrWhiteSpace(errorContent))
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                var errorMessage = $"Randevu onaylama başarısız: {response.StatusCode}";
-                try
+                var errorObj = JsonSerializer.Deserialize<JsonElement>(errorContent);
+                if (errorObj.TryGetProperty("error", out var errorProp))
                 {
-                    // JSON error response'u parse etmeye çalış
-                    if (!string.IsNullOrWhiteSpace(errorContent))
-                    {
-                        var errorObj = JsonSerializer.Deserialize<JsonElement>(errorContent);
-                        if (errorObj.TryGetProperty("error", out var errorProp))
-                        {
-                            errorMessage = errorProp.GetString() ?? errorMessage;
-                        }
-                        else
-                        {
-                            errorMessage = errorContent;
-                        }
-                    }
+                    errorMessage = errorProp.GetString() ?? errorMessage;
                 }
-                catch
+                else
                 {
-                    // Parse edilemezse raw content'i kullan
-                    if (!string.IsNullOrWhiteSpace(errorContent))
-                    {
-                        errorMessage = errorContent;
-                    }
+                    errorMessage = errorContent;
                 }
-                throw new HttpRequestException(errorMessage);
             }
-            
-            // Başarılı response'u kontrol et
-            response.EnsureSuccessStatusCode();
         }
-
-        public async Task RejectAppointmentAsync(int id, string adminUser, string comment)
+        catch
         {
-            AddAuthHeaders();
-            var response = await _httpClient.PostAsJsonAsync($"/api/appointments/{id}/reject", new { AdminUser = adminUser, Comment = comment });
-            
-            if (!response.IsSuccessStatusCode)
+            if (!string.IsNullOrWhiteSpace(errorContent))
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                var errorMessage = $"Randevu reddetme başarısız: {response.StatusCode}";
-                try
-                {
-                    // JSON error response'u parse etmeye çalış
-                    if (!string.IsNullOrWhiteSpace(errorContent))
-                    {
-                        var errorObj = JsonSerializer.Deserialize<JsonElement>(errorContent);
-                        if (errorObj.TryGetProperty("error", out var errorProp))
-                        {
-                            errorMessage = errorProp.GetString() ?? errorMessage;
-                        }
-                        else
-                        {
-                            errorMessage = errorContent;
-                        }
-                    }
-                }
-                catch
-                {
-                    // Parse edilemezse raw content'i kullan
-                    if (!string.IsNullOrWhiteSpace(errorContent))
-                    {
-                        errorMessage = errorContent;
-                    }
-                }
-                throw new HttpRequestException(errorMessage);
+                errorMessage = errorContent;
             }
-            
-            // Başarılı response'u kontrol et
-            response.EnsureSuccessStatusCode();
         }
+        throw new HttpRequestException(errorMessage);
+    }
+    
+    response.EnsureSuccessStatusCode();
+}
 
+public async Task RejectAppointmentAsync(int id, string adminUser, string comment)
+{
+    AddAuthHeaders();
+    var response = await _httpClient.PostAsJsonAsync($"/api/appointments/{id}/reject", new { AdminUser = adminUser, Comment = comment });
+    
+    if (!response.IsSuccessStatusCode)
+    {
+        var errorContent = await response.Content.ReadAsStringAsync();
+        var errorMessage = $"Randevu reddetme başarısız: {response.StatusCode}";
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(errorContent))
+            {
+                var errorObj = JsonSerializer.Deserialize<JsonElement>(errorContent);
+                if (errorObj.TryGetProperty("error", out var errorProp))
+                {
+                    errorMessage = errorProp.GetString() ?? errorMessage;
+                }
+                else
+                {
+                    errorMessage = errorContent;
+                }
+            }
+        }
+        catch
+        {
+            if (!string.IsNullOrWhiteSpace(errorContent))
+            {
+                errorMessage = errorContent;
+            }
+        }
+        throw new HttpRequestException(errorMessage);
+    }
+    
+    response.EnsureSuccessStatusCode();
+}
         public async Task UpdateStatusAsync(int id, AppointmentStatus toStatus, string actionBy, string? comment = null)
         {
             AddAuthHeaders();

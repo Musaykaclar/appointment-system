@@ -26,23 +26,21 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] 
-    public IDialogReference? Dialog { get; set; }
-    
     [Parameter] public AppointmentDto? Appointment { get; set; }
+    [Parameter] public EventCallback<string?> OnResult { get; set; }
 
     private string RejectComment { get; set; } = string.Empty;
 
-    void Submit()
+    async Task Submit()
     {
         if (!string.IsNullOrWhiteSpace(RejectComment))
         {
-            Dialog?.Close(DialogResult.Ok(RejectComment));
+            await OnResult.InvokeAsync(RejectComment);
         }
     }
 
-    void Cancel() 
+    async Task Cancel() 
     {
-        Dialog?.Close(DialogResult.Cancel());
+        await OnResult.InvokeAsync(null);
     }
 }

@@ -172,25 +172,31 @@
         await LoadAppointments();
     }
 
-   private async Task ApproveAppointment(AppointmentDto appointment)
+private IDialogReference? currentDialog;
+
+private async Task ApproveAppointment(AppointmentDto appointment)
 {
-    var parameters = new DialogParameters<ConfirmDialog>
+    var parameters = new DialogParameters
     {
-        { x => x.Message, $"'{appointment.Title}' başlıklı randevuyu onaylamak istediğinizden emin misiniz?" },
-        { x => x.ConfirmText, "Onayla" },
-        { x => x.CancelText, "İptal" }
+        ["Message"] = $"'{appointment.Title}' başlıklı randevuyu onaylamak istediğinizden emin misiniz?",
+        ["ConfirmText"] = "Onayla",
+        ["CancelText"] = "İptal",
+        ["OnResult"] = EventCallback.Factory.Create<bool>(this, async (confirmed) => 
+        {
+            currentDialog?.Close();
+            if (confirmed)
+            {
+                await ProcessApproval(appointment);
+            }
+        })
     };
 
     var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
+    currentDialog = await DialogService.ShowAsync<ConfirmDialog>("Onay", parameters, options);
+}
 
-    var dialog = await DialogService.ShowAsync<ConfirmDialog>("Onay", parameters, options);
-    var result = await dialog.Result;
-
-    if (result.Canceled)
-    {
-        return;
-    }
-
+private async Task ProcessApproval(AppointmentDto appointment)
+{
     IsLoading = true;
     StateHasChanged();
     
@@ -221,9 +227,17 @@
 
 private async Task RejectAppointment(AppointmentDto appointment)
 {
-    var parameters = new DialogParameters<RejectDialog>
+    var parameters = new DialogParameters
     {
-        { x => x.Appointment, appointment }
+        ["Appointment"] = appointment,
+        ["OnResult"] = EventCallback.Factory.Create<string?>(this, async (comment) => 
+        {
+            currentDialog?.Close();
+            if (!string.IsNullOrWhiteSpace(comment))
+            {
+                await ProcessRejection(appointment, comment);
+            }
+        })
     };
 
     var options = new DialogOptions 
@@ -232,23 +246,12 @@ private async Task RejectAppointment(AppointmentDto appointment)
         MaxWidth = MaxWidth.Medium,
         FullWidth = true
     };
-
-    var dialog = await DialogService.ShowAsync<RejectDialog>("Randevu Reddet", parameters, options);
-    var result = await dialog.Result;
-
-    if (result.Canceled)
-    {
-        return;
-    }
-
-    var comment = result.Data as string;
     
-    if (string.IsNullOrWhiteSpace(comment))
-    {
-        Snackbar.Add("Red nedeni zorunludur!", Severity.Warning);
-        return;
-    }
+    currentDialog = await DialogService.ShowAsync<RejectDialog>("Randevu Reddet", parameters, options);
+}
 
+private async Task ProcessRejection(AppointmentDto appointment, string comment)
+{
     IsLoading = true;
     StateHasChanged();
     
@@ -276,7 +279,6 @@ private async Task RejectAppointment(AppointmentDto appointment)
         StateHasChanged();
     }
 }
-
     private async Task ShowDetails(AppointmentDto appointment)
     {
         // Önce güncel randevu bilgilerini yükle
