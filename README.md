@@ -68,15 +68,38 @@ cd appointment-system
 
 2. **Veritabanı bağlantı string'ini yapılandırın:**
 
-`src/AppointmentSystem.Api/appsettings.json` dosyasında PostgreSQL bağlantı string'ini düzenleyin:
+Bu proje hassas bilgileri güvenli bir şekilde saklamak için **.NET User Secrets** kullanmaktadır. Bağlantı string'i `appsettings.json` dosyasında placeholder olarak bulunur, gerçek değerler User Secrets'ta saklanır.
 
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=appointmentdb;Username=postgres;Password=YOUR_PASSWORD"
-  }
-}
+**User Secrets ile bağlantı string'ini ayarlayın:**
+
+```bash
+cd src/AppointmentSystem.Api
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Port=5432;Database=appointmentdb;User Id=postgres;Password=YOUR_PASSWORD"
 ```
+
+**Not:** `YOUR_PASSWORD` kısmını kendi PostgreSQL şifrenizle değiştirin.
+
+**User Secrets Yönetimi:**
+
+- **Secret'ı görüntülemek için:**
+  ```bash
+  cd src/AppointmentSystem.Api
+  dotnet user-secrets list
+  ```
+
+- **Secret'ı güncellemek için:**
+  ```bash
+  cd src/AppointmentSystem.Api
+  dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Yeni_Bağlantı_Stringi"
+  ```
+
+- **Secret'ı silmek için:**
+  ```bash
+  cd src/AppointmentSystem.Api
+  dotnet user-secrets remove "ConnectionStrings:DefaultConnection"
+  ```
+
+**Önemli:** User Secrets yalnızca geliştirme ortamında kullanılır. Production ortamında environment variables veya Azure Key Vault gibi güvenli yapılandırma yöntemleri kullanılmalıdır.
 
 3. **PostgreSQL veritabanını oluşturun:**
 ```sql
