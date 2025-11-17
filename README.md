@@ -297,6 +297,44 @@ Draft → Pending → Approved
 - Toast/Snackbar bildirimleri (başarılı/hatalı işlemler)
 - Global hata yönetimi
 
+## 📸 Ekran Görüntüleri
+
+### 1. Giriş Sayfası
+![Giriş Sayfası](images/Ekran görüntüsü 2025-11-17 184614.png)
+
+### 2. Randevu Listesi
+![Randevu Listesi](images/Ekran görüntüsü 2025-11-17 184640.png)
+
+### 3. Randevu Talep Formu
+![Randevu Talep Formu](images/Ekran görüntüsü 2025-11-17 184706.png)
+
+### 4. Yönetici Paneli
+![Yönetici Paneli](images/Ekran görüntüsü 2025-11-17 184726.png)
+
+### 5. Randevu Detayları
+![Randevu Detayları](images/Ekran görüntüsü 2025-11-17 184751.png)
+
+### 6. Randevu Onaylama
+![Randevu Onaylama](images/Ekran görüntüsü 2025-11-17 184809.png)
+
+### 7. Randevu Reddetme
+![Randevu Reddetme](images/Ekran görüntüsü 2025-11-17 184818.png)
+
+### 8. Filtreleme ve Arama
+![Filtreleme ve Arama](images/Ekran görüntüsü 2025-11-17 184835.png)
+
+### 9. Sayfalama
+![Sayfalama](images/Ekran görüntüsü 2025-11-17 184841.png)
+
+### 10. Randevu Durumları
+![Randevu Durumları](images/Ekran görüntüsü 2025-11-17 184856.png)
+
+### 11. Kullanıcı Randevuları
+![Kullanıcı Randevuları](images/Ekran görüntüsü 2025-11-17 184938.png)
+
+### 12. Yönetici Randevu Yönetimi
+![Yönetici Randevu Yönetimi](images/Ekran görüntüsü 2025-11-17 184946.png)
+
 ## 🚀 Geliştirme
 
 ### Migration Oluşturma
