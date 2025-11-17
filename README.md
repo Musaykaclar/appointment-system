@@ -300,40 +300,40 @@ Draft → Pending → Approved
 ## 📸 Ekran Görüntüleri
 
 ### 1. Giriş Sayfası
-![Giriş Sayfası](images/Ekran%20görüntüsü%202025-11-17%20184614.png)
+![Giriş Sayfası](images/Login.png)
 
-### 2. Randevu Listesi
-![Randevu Listesi](images/Ekran%20görüntüsü%202025-11-17%20184640.png)
+### 2. Kayıt Ol Sayfası
+![Kayıt Ol Sayfası](images/Kayıt-Ol.png)
 
 ### 3. Randevu Talep Formu
-![Randevu Talep Formu](images/Ekran%20görüntüsü%202025-11-17%20184706.png)
+![Randevu Talep Formu](images/Randevu-Talep-Formu.png)
 
-### 4. Yönetici Paneli
-![Yönetici Paneli](images/Ekran%20görüntüsü%202025-11-17%20184726.png)
+### 4. Randevu Gönderildi
+![Randevu Gönderildi](images/Randevu-Gönderildi.png)
 
-### 5. Randevu Detayları
-![Randevu Detayları](images/Ekran%20görüntüsü%202025-11-17%20184751.png)
+### 5. Randevu Listesi
+![Randevu Listesi](images/Randevu-Listesi.png)
 
-### 6. Randevu Onaylama
-![Randevu Onaylama](images/Ekran%20görüntüsü%202025-11-17%20184809.png)
+### 6. Kullanıcı Randevuları
+![Kullanıcı Randevuları](images/Randevularım.png)
 
-### 7. Randevu Reddetme
-![Randevu Reddetme](images/Ekran%20görüntüsü%202025-11-17%20184818.png)
+### 7. Randevu Filtreleme
+![Randevu Filtreleme](images/Randevu-Filtrele.png)
 
-### 8. Filtreleme ve Arama
-![Filtreleme ve Arama](images/Ekran%20görüntüsü%202025-11-17%20184835.png)
+### 8. Randevu Detayları
+![Randevu Detayları](images/Randevu-detayları.png)
 
-### 9. Sayfalama
-![Sayfalama](images/Ekran%20görüntüsü%202025-11-17%20184841.png)
+### 9. Yönetici Paneli
+![Yönetici Paneli](images/Yönetici-Paneli.png)
 
-### 10. Randevu Durumları
-![Randevu Durumları](images/Ekran%20görüntüsü%202025-11-17%20184856.png)
+### 10. Randevu Onaylama
+![Randevu Onaylama](images/Randevu-Onay.png)
 
-### 11. Kullanıcı Randevuları
-![Kullanıcı Randevuları](images/Ekran%20görüntüsü%202025-11-17%20184938.png)
+### 11. Randevu Reddetme
+![Randevu Reddetme](images/Randevu-Reddet.png)
 
-### 12. Yönetici Randevu Yönetimi
-![Yönetici Randevu Yönetimi](images/Ekran%20görüntüsü%202025-11-17%20184946.png)
+### 12. Randevu Talebi
+![Randevu Talebi](images/Randevu-Talebi.png)
 
 ## 🚀 Geliştirme
 
