@@ -300,40 +300,40 @@ Draft → Pending → Approved
 ## 📸 Ekran Görüntüleri
 
 ### 1. Giriş Sayfası
-![Giriş Sayfası](images/Ekran görüntüsü 2025-11-17 184614.png)
+![Giriş Sayfası](images/Ekran%20görüntüsü%202025-11-17%20184614.png)
 
 ### 2. Randevu Listesi
-![Randevu Listesi](images/Ekran görüntüsü 2025-11-17 184640.png)
+![Randevu Listesi](images/Ekran%20görüntüsü%202025-11-17%20184640.png)
 
 ### 3. Randevu Talep Formu
-![Randevu Talep Formu](images/Ekran görüntüsü 2025-11-17 184706.png)
+![Randevu Talep Formu](images/Ekran%20görüntüsü%202025-11-17%20184706.png)
 
 ### 4. Yönetici Paneli
-![Yönetici Paneli](images/Ekran görüntüsü 2025-11-17 184726.png)
+![Yönetici Paneli](images/Ekran%20görüntüsü%202025-11-17%20184726.png)
 
 ### 5. Randevu Detayları
-![Randevu Detayları](images/Ekran görüntüsü 2025-11-17 184751.png)
+![Randevu Detayları](images/Ekran%20görüntüsü%202025-11-17%20184751.png)
 
 ### 6. Randevu Onaylama
-![Randevu Onaylama](images/Ekran görüntüsü 2025-11-17 184809.png)
+![Randevu Onaylama](images/Ekran%20görüntüsü%202025-11-17%20184809.png)
 
 ### 7. Randevu Reddetme
-![Randevu Reddetme](images/Ekran görüntüsü 2025-11-17 184818.png)
+![Randevu Reddetme](images/Ekran%20görüntüsü%202025-11-17%20184818.png)
 
 ### 8. Filtreleme ve Arama
-![Filtreleme ve Arama](images/Ekran görüntüsü 2025-11-17 184835.png)
+![Filtreleme ve Arama](images/Ekran%20görüntüsü%202025-11-17%20184835.png)
 
 ### 9. Sayfalama
-![Sayfalama](images/Ekran görüntüsü 2025-11-17 184841.png)
+![Sayfalama](images/Ekran%20görüntüsü%202025-11-17%20184841.png)
 
 ### 10. Randevu Durumları
-![Randevu Durumları](images/Ekran görüntüsü 2025-11-17 184856.png)
+![Randevu Durumları](images/Ekran%20görüntüsü%202025-11-17%20184856.png)
 
 ### 11. Kullanıcı Randevuları
-![Kullanıcı Randevuları](images/Ekran görüntüsü 2025-11-17 184938.png)
+![Kullanıcı Randevuları](images/Ekran%20görüntüsü%202025-11-17%20184938.png)
 
 ### 12. Yönetici Randevu Yönetimi
-![Yönetici Randevu Yönetimi](images/Ekran görüntüsü 2025-11-17 184946.png)
+![Yönetici Randevu Yönetimi](images/Ekran%20görüntüsü%202025-11-17%20184946.png)
 
 ## 🚀 Geliştirme
 
