@@ -297,12 +297,6 @@ Draft → Pending → Approved
 - Toast/Snackbar bildirimleri (başarılı/hatalı işlemler)
 - Global hata yönetimi
 
-## 📸 Ekran Görüntüleri
-
-1. **Randevu Listesi**: Filtreleme, arama, sıralama ve sayfalama
-2. **Randevu Talep Formu**: Şube seçimi, tarih/saat, validasyon
-3. **Yönetici Paneli**: Onay/Red akışı
-
 ## 🚀 Geliştirme
 
 ### Migration Oluşturma
@@ -329,19 +323,6 @@ Bu proje eğitim amaçlı geliştirilmiştir.
 - PostgreSQL veritabanı kullanılmıştır (MSSQL'e değiştirilebilir)
 - MudBlazor 8.14.0 kullanılmıştır
 - FluentValidation 11.10.0 kullanılmıştır
-
-## 🔮 Gelecek Geliştirmeler
-
-- [x] Authentication & Authorization (Basit sistem mevcut)
-- [ ] JWT Token Authentication (Şu anda basit token kullanılıyor)
-- [ ] Şifre hash'leme (BCrypt/Argon2)
-- [ ] Email bildirimleri
-- [ ] Randevu çakışma kontrolü
-- [ ] Takvim görünümü
-- [ ] Export/Import özellikleri
-- [ ] Raporlama
-- [ ] Şifre sıfırlama
-- [ ] Kullanıcı profil yönetimi
 
 ---
 

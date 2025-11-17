@@ -11,7 +11,8 @@
           Striped="true" 
           Dense="false" 
           Loading="@IsLoading"
-          Elevation="1">
+          Elevation="1"
+          ServerSide="true">
     <HeaderContent>
         <MudTh>Talep No</MudTh>
         <MudTh>Başlık</MudTh>
@@ -120,11 +121,11 @@
         <MudTablePager t="AppointmentDto" 
                        PageSizeOptions="new int[] { 10, 25, 50 }"
                        InfoFormat="{first_item}-{last_item} / {all_items}"
-                       pageSizeChanged="OnPageSizeChanged"
-                       pageChanged="OnPageChanged"
-                       pageSize="@PageSize"
-                       currentPage="@CurrentPage"
-                       totalItems="@TotalCount" />
+                       PageSizeChanged="@OnPageSizeChanged"
+                       PageChanged="@OnPageChanged"
+                       PageSize="@PageSize"
+                       CurrentPage="@CurrentPage"
+                       TotalItems="@TotalCount" />
     </PagerContent>
 </MudTable>
 
